@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
@@ -19,7 +20,7 @@ class User(AbstractUser,TimestampedModel):
    user_type = models.CharField(choices=USER_TYPE_CHOICES)
    
    def __str__(self):
-       return "{}".format(self.email)
+       return "{}".format(self.username)
 
 class CustomerProfile(TimestampedModel):
     user = models.OneToOneField(User,on_delete=models.CASCADE)
@@ -50,6 +51,12 @@ class DriverProfile(TimestampedModel):
     def __str__(self):
        return "{}".format(self.user)
 
+    # def update_availability(self):
+    #     pass
+    
+    # def get_delivery_stats(self):
+    #     pass
+
 class Restaurant(TimestampedModel):
 
     CUISINE_CHOICES=  (
@@ -75,6 +82,14 @@ class Restaurant(TimestampedModel):
 
     def __str__(self):
        return "{}".format(self.name)
+    
+    def is_currently_open(self):
+        if datetime.now().strftime("%H:%M:%S")>self.opening_time or datetime.now().strftime("%H:%M:%S")<self.closing_time:
+            return True
+        return False
+    
+    # def update_average_rating(self):
+    #     pass
 
 class MenuItem(TimestampedModel):
 
@@ -128,6 +143,17 @@ class Order(TimestampedModel):
     def calculate_total(self):
         return self.subtotal+self.delivery_fee+self.tax
     
+    def can_cancel(self):
+        if self.status != 'cancelled' or self.status != 'picked_up' or self.status != 'delivered':
+            return False
+        return True
+    
+    def is_delivered(self):
+        if self.status == 'delivered':
+            return True
+        return False
+
+    
     
 class OrderItem(models.Model):
     order = models.ManyToManyField(Order)
@@ -145,7 +171,7 @@ class Review(TimestampedModel):
     restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,null=True,db_index=True)
     menu_item = models.ForeignKey(MenuItem,on_delete=models.CASCADE,null=True)
     order = models.ForeignKey(Order,on_delete=models.CASCADE)
-    rating = models.IntegerField(max_length=1)
+    rating = models.IntegerField()
     comment = models.TextField(null=True)
 
     def __str__(self):
