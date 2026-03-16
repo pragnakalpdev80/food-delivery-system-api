@@ -18,6 +18,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         def create(self, validated_data):
             validated_data.pop('confirm_password')
             user = User.objects.create_user(**validated_data)
+            # user.save()
             return user
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
@@ -51,7 +52,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
         fields = ['restaurant','name','description','price','category',
                   'dietary_info','image','is_available','preparation_time']
 
-class OrderSerialzer(serializers.ModelSerializer):
+class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['customer','restaurant','driver','order_number',
@@ -59,12 +60,12 @@ class OrderSerialzer(serializers.ModelSerializer):
                   'tax','total_amount','special_instructions',
                   'estimated_delivery_time','actual_delivery_time',]
 
-class OrderItemSerialzer(serializers.ModelSerializer):
+class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderItem
         fields = ['order','menu_item','quantity','price','special_instructions',]
 
-class ReviewSerialzer(serializers.ModelSerializer):
+class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ['customer','restaurant','menu_item','order',
@@ -74,20 +75,17 @@ class OrderDetailSerializer(serializers.ModelField):
     restaurant = RestaurantSerializer(read_only=True)
     customer = CustomerProfileSerializer(read_only=True)
     driver = DriverProfileSerializer(read_only=True)
-    restaurant_id = serializers.IntegerField(write_only=True)
-    customer_id = serializers.IntegerField(write_only=True)
-    driver_id = serializers.IntegerField(write_only=True)
+    
     class Meta:
         model = Order
-        fields = ['customer','customer_id','restaurant','restaurant_id',
-                  'driver','driver_id','order_number','status','delivery_address',
-                  'subtotal','delivery_fee','tax','total_amount',
+        fields = ['customer','restaurant''driver','order_number','status',
+                  'delivery_address','subtotal','delivery_fee','tax','total_amount',
                   'special_instructions','estimated_delivery_time','actual_delivery_time',]
         read_only_fields= ['customer','restaurant','driver',]
 
 class RestaurantDetailSerializer(serializers.ModelSerializer):
     menu_item = MenuItemSerializer(read_only=True)
-    item_review = ReviewSerialzer(read_only=True)
+    item_review = ReviewSerializer(read_only=True)
     class Meta:
         model = Restaurant
         fields = ['owner','name','description','cuisine_type','address',

@@ -1,9 +1,33 @@
 import uuid
 from datetime import datetime
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser,BaseUserManager
 
-# Create your models here.
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **kwargs):
+        if not email:
+            raise ValueError("Users must have an email")
+
+        email = self.normalize_email(email).lower()
+
+        user = self.model(email=email, **kwargs)
+        user.set_password(password)
+        user.save()
+
+        return user
+
+
+    def create_superuser(self, email, password, **extra_fields):
+        if not password:
+            raise ValueError("Password is required")
+
+        user = self.create_user(email, password)
+        user.is_superuser = True
+        user.is_staff = True
+        user.save()
+
+        return user
+
 class TimestampedModel(models.Model):
     """Base model with timestamp fields"""
     created_at = models.DateTimeField(auto_now_add=True,db_index=True)
@@ -18,6 +42,8 @@ class User(AbstractUser,TimestampedModel):
     )   
    phone_no = models.CharField(max_length = 10)
    user_type = models.CharField(choices=USER_TYPE_CHOICES)
+
+   objects = UserManager()
    
    def __str__(self):
        return "{}".format(self.username)
@@ -26,7 +52,7 @@ class CustomerProfile(TimestampedModel):
     user = models.OneToOneField(User,on_delete=models.CASCADE)
     avatar = models.ImageField(default='default.jpg', upload_to='customer_avatar')
     default_address =models.TextField()
-    saved_addresses = models.JSONField()
+    saved_addresses = models.JSONField(default={'default':'1'})
     total_orders = models.IntegerField(default=0)
     loyalty_points = models.IntegerField(default=0)
 
@@ -51,15 +77,19 @@ class DriverProfile(TimestampedModel):
     def __str__(self):
        return "{}".format(self.user)
 
-    # def update_availability(self):
-    #     pass
-    
-    # def get_delivery_stats(self):
-    #     pass
+    def update_availability(self, status):
+        self.is_available = status
+        self.save(update_fields=['is_available', 'updated_at'])
+
+    def get_delivery_stats(self):
+        return {
+            'total_deliveries': self.total_deliveries,
+            'average_rating':   self.average_rating,
+        }
 
 class Restaurant(TimestampedModel):
 
-    CUISINE_CHOICES=  (
+    CUISINE_CHOICES =  (
         ("italian","Italian"), ("chinise","Chinese"), ("indian","Indian"), ("mexican","Mexican"), 
         ("american","American"), ("japanese","Japanese"), ("thai","Thai"), ("mediterranean","Mediterranean")
     )
@@ -152,8 +182,6 @@ class Order(TimestampedModel):
         if self.status == 'delivered':
             return True
         return False
-
-    
     
 class OrderItem(models.Model):
     order = models.ManyToManyField(Order)
@@ -176,5 +204,3 @@ class Review(TimestampedModel):
 
     def __str__(self):
        return "{}".format(self.customer)
-
-

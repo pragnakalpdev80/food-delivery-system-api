@@ -148,9 +148,17 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ], 
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',
+        'user': '1000/hour'
+    },
 }
 
-SIMPLE_JWT ={
+SIMPLE_JWT = {
     # How long access token is valid (short = more secure, but users need to refresh more often)
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     
