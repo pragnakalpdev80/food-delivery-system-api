@@ -133,7 +133,7 @@ class MenuItem(TimestampedModel):
         ("dairy_free","Dairy-Free"), ("none","None")
     )
 
-    restaurant = models.ForeignKey(User,on_delete=models.CASCADE,db_index=True)
+    restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,db_index=True)
     name = models.CharField(max_length=50)
     description = models.TextField()
     price = models.DecimalField(max_digits=10 ,decimal_places=2)
@@ -153,9 +153,9 @@ class Order(TimestampedModel):
         ("picked_up","Picked Up"), ("delivered","Delivered"), ("cancelled","Cancelled")
     )
 
-    customer =  models.ForeignKey(User,on_delete=models.CASCADE,related_name="orders",db_index=True)
+    customer =  models.ForeignKey(CustomerProfile,on_delete=models.CASCADE,related_name="orders",db_index=True)
     restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,related_name="orders",db_index=True)
-    driver = models.ForeignKey(User,on_delete=models.CASCADE,null=True)
+    driver = models.ForeignKey(DriverProfile,on_delete=models.CASCADE,null=True)
     order_number =models.UUIDField(default=uuid.uuid4)
     status = models.CharField(choices=STATUS_CHOICES,db_index=True)
     delivery_address = models.TextField()
@@ -195,7 +195,7 @@ class OrderItem(models.Model):
        return "{}".format(self.menu_item)
 
 class Review(TimestampedModel):
-    customer = models.ForeignKey(User,on_delete=models.CASCADE,db_index=True)
+    customer = models.ForeignKey(CustomerProfile,on_delete=models.CASCADE,db_index=True)
     restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,null=True,db_index=True)
     menu_item = models.ForeignKey(MenuItem,on_delete=models.CASCADE,null=True)
     order = models.ForeignKey(Order,on_delete=models.CASCADE)

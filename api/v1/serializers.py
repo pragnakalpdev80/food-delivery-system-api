@@ -55,7 +55,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ['customer','restaurant','driver','order_number',
+        fields = ['customer','restaurant','driver',
                   'status','delivery_address','subtotal','delivery_fee',
                   'tax','total_amount','special_instructions',
                   'estimated_delivery_time','actual_delivery_time',]
