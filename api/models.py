@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime,time
 from django.db import models
 from django.contrib.auth.models import AbstractUser,BaseUserManager
 
@@ -52,7 +52,7 @@ class CustomerProfile(TimestampedModel):
     user = models.OneToOneField(User,on_delete=models.CASCADE)
     avatar = models.ImageField(default='default.jpg', upload_to='customer_avatar')
     default_address =models.TextField()
-    saved_addresses = models.JSONField(default={'default':'1'})
+    saved_addresses = models.JSONField()
     total_orders = models.IntegerField(default=0)
     loyalty_points = models.IntegerField(default=0)
 

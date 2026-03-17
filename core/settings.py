@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_filters',
     'rest_framework',
     'rest_framework_simplejwt',
     'api',   
@@ -156,6 +157,14 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '1000/hour'
     },
+    'DEFAULT_FILTER_BACKENDS': [
+        # DjangoFilterBackend: Handles filtering with django-filter (exact matches, ranges, etc.)
+        'django_filters.rest_framework.DjangoFilterBackend',
+        # SearchFilter: Handles searching across multiple fields (built into DRF)
+        'rest_framework.filters.SearchFilter',
+        # OrderingFilter: Handles sorting results (built into DRF)
+        'rest_framework.filters.OrderingFilter',
+    ],
 }
 
 SIMPLE_JWT = {
