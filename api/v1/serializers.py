@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from api.models import User,CustomerProfile, DriverProfile,Restaurant, MenuItem, Order, OrderItem ,Review
+from api.validators import validate_image_format, validate_image_size_5mb, validate_image_size_10mb
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8,style = {'input_type': 'password'})
@@ -22,6 +23,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
+    avatar = serializers.ImageField(validators=[validate_image_format,validate_image_size_5mb])
     class Meta:
         model = CustomerProfile
         fields = ['user','avatar','default_address','saved_addresses',
@@ -29,6 +31,7 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['total_orders','loyalty_points',]
 
 class DriverProfileSerializer(serializers.ModelSerializer):
+    avatar = serializers.ImageField(validators=[validate_image_format, validate_image_size_5mb])
     class Meta:
         model = DriverProfile
         fields = ['user','avatar','vehicle_type','vehicle_number',
@@ -37,6 +40,8 @@ class DriverProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['total_deliveries','average_rating']
 
 class RestaurantSerializer(serializers.ModelSerializer):
+    logo = serializers.ImageField(validators=[validate_image_format, validate_image_size_5mb])
+    banner = serializers.ImageField(validators=[validate_image_format, validate_image_size_10mb])
     class Meta:
         model = Restaurant
         fields = ['owner','name','description','cuisine_type','address',
@@ -46,6 +51,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
         read_only_fields = ['average_rating','total_reviews']
 
 class MenuItemSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(validators=[validate_image_format, validate_image_size_5mb])
     restaurant = RestaurantSerializer(read_only=True)
     class Meta:
         model = MenuItem
@@ -55,10 +61,11 @@ class MenuItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
-        fields = ['customer','restaurant','driver',
+        fields = ['customer','restaurant','driver','order_number',
                   'status','delivery_address','subtotal','delivery_fee',
                   'tax','total_amount','special_instructions',
                   'estimated_delivery_time','actual_delivery_time',]
+        read_only_fields = ['order_number','estimated_delivery_time','actual_delivery_time']
 
 class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
@@ -86,6 +93,7 @@ class OrderDetailSerializer(serializers.ModelField):
 class RestaurantDetailSerializer(serializers.ModelSerializer):
     menu_item = MenuItemSerializer(read_only=True)
     item_review = ReviewSerializer(read_only=True)
+    
     class Meta:
         model = Restaurant
         fields = ['owner','name','description','cuisine_type','address',
