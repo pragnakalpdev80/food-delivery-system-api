@@ -3,30 +3,6 @@ from datetime import datetime,time
 from django.db import models
 from django.contrib.auth.models import AbstractUser,BaseUserManager
 
-class UserManager(BaseUserManager):
-    def create_user(self, email, password=None, **kwargs):
-        if not email:
-            raise ValueError("Users must have an email")
-
-        email = self.normalize_email(email).lower()
-
-        user = self.model(email=email, **kwargs)
-        user.set_password(password)
-        user.save()
-
-        return user
-
-
-    def create_superuser(self, email, password, **extra_fields):
-        if not password:
-            raise ValueError("Password is required")
-
-        user = self.create_user(email, password)
-        user.is_superuser = True
-        user.is_staff = True
-        user.save()
-
-        return user
 
 class TimestampedModel(models.Model):
     """Base model with timestamp fields"""
@@ -39,11 +15,10 @@ class TimestampedModel(models.Model):
 class User(AbstractUser,TimestampedModel):
    USER_TYPE_CHOICES = (
         ('customer',"Customer"),('restaurant_owner',"Restaurant Owner"),('delivery_driver',"Delivery Driver"),
-    )   
-   phone_no = models.CharField(max_length = 10)
+    )
+   email = models. EmailField(unique=True)
+   phone_no = models.CharField(max_length = 10,unique=True)
    user_type = models.CharField(choices=USER_TYPE_CHOICES)
-
-   objects = UserManager()
    
    def __str__(self):
        return "{}".format(self.username)
@@ -51,7 +26,7 @@ class User(AbstractUser,TimestampedModel):
 class CustomerProfile(TimestampedModel):
     user = models.OneToOneField(User,on_delete=models.CASCADE)
     avatar = models.ImageField(default='default.jpg', upload_to='customer_avatar')
-    default_address =models.TextField()
+    default_address = models.TextField()
     saved_addresses = models.JSONField()
     total_orders = models.IntegerField(default=0)
     loyalty_points = models.IntegerField(default=0)
@@ -86,7 +61,7 @@ class DriverProfile(TimestampedModel):
             'total_deliveries': self.total_deliveries,
             'average_rating':   self.average_rating,
         }
-
+    
 class Restaurant(TimestampedModel):
 
     CUISINE_CHOICES =  (
@@ -117,9 +92,14 @@ class Restaurant(TimestampedModel):
         if datetime.now().strftime("%H:%M:%S")>self.opening_time or datetime.now().strftime("%H:%M:%S")<self.closing_time:
             return True
         return False
-    
-    # def update_average_rating(self):
-    #     pass
+
+    def update_average_rating(self):
+        reviews = self.review_set.all()
+        if reviews.exists():
+            avg = sum([review.rating for review in reviews]) / reviews.count()
+            self.average_rating = round(avg, 2)
+            self.total_reviews = reviews.count()
+            self.save(update_fields=['average_rating', 'total_reviews', 'updated_at'])
 
 class MenuItem(TimestampedModel):
 
@@ -174,17 +154,15 @@ class Order(TimestampedModel):
         return self.subtotal+self.delivery_fee+self.tax
     
     def can_cancel(self):
-        if self.status != 'cancelled' or self.status != 'picked_up' or self.status != 'delivered':
-            return False
-        return True
-    
+        return self.status in ['pending', 'confirmed']
+           
     def is_delivered(self):
         if self.status == 'delivered':
             return True
         return False
     
 class OrderItem(models.Model):
-    order = models.ManyToManyField(Order)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
     menu_item = models.ManyToManyField(MenuItem)
     quantity = models.IntegerField()
     price = models.DecimalField(max_digits=10 ,decimal_places=2)

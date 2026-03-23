@@ -6,8 +6,10 @@ from .models import User, CustomerProfile, DriverProfile, Restaurant
 def create_userprofile(sender, instance, created, **kwargs):
     if created:
         if instance.user_type == 'customer':
-            CustomerProfile.objects.create(user=instance)
+            CustomerProfile.objects.create(user=instance,
+                                            default_address = 'TBD',
+                                            saved_addresses = {'address1':'TBD'},
+                                            )
         elif instance.user_type == 'delivery_driver':
             DriverProfile.objects.create(user=instance) 
-        elif instance.user_type == 'restaurant_owner':
-            Restaurant.objects.create(owner=instance) 
+            

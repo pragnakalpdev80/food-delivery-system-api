@@ -8,7 +8,7 @@ class RestaurantFilter(django_filters.FilterSet):
 
     class Meta:
         model = Restaurant
-        fields = ['cuisine_type', 'is_open','delivery_fee__lte','minimum_order__lte','average_rating__gte']
+        fields = ['cuisine_type', 'is_open', 'delivery_fee__lte', 'minimum_order__lte', 'average_rating__gte']
 
 class MenuItemFilter(django_filters.FilterSet):
     price__lte = django_filters.NumberFilter(field_name='price', lookup_expr='lte')
