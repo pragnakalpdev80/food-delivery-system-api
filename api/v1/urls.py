@@ -6,6 +6,7 @@ app_name = "api"
 
 router = DefaultRouter()
 router.register(r'customers', views.CustomerViewSet, basename='customer')
+router.register(r'addresses', views.AddressViewSet, basename='address')
 router.register(r'drivers', views.DriverViewSet, basename='driver')
 router.register(r'restaurants', views.RestaurantViewSet, basename='restaurant')
 router.register(r'menu-items', views.MenuItemViewSet, basename='menu-item')

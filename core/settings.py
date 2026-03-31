@@ -34,6 +34,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -46,6 +47,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'api',   
     'drf_spectacular',    
+    'channels',
+    'channels_redis',
 ]
 
 MIDDLEWARE = [
@@ -157,7 +160,10 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
-        'user': '1000/hour'
+        'user': '1000/hour',
+        'order_create': '20/hour',
+        'review_create': '10/hour',
+        'location_update': '500/hour',
     },
     'DEFAULT_FILTER_BACKENDS': [
         # DjangoFilterBackend: Handles filtering with django-filter (exact matches, ranges, etc.)
@@ -236,6 +242,31 @@ LOGGING = {
         'api': {
             'handlers': ['file'],
             'level': 'INFO',
+        },
+    },
+}
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'api',
+        'TIMEOUT': 300,
+    }
+} 
+
+APPEND_SLASH = True
+
+ASGI_APPLICATION = 'core.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
         },
     },
 }

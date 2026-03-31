@@ -2,9 +2,13 @@ from rest_framework.pagination import PageNumberPagination,CursorPagination,Limi
 
 class RestaurantPageNumberPagination(PageNumberPagination):
     page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class MenuItemPageNumberPagination(PageNumberPagination):
     page_size = 30
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class ReviewLimitOffsetPagination(LimitOffsetPagination):
     default_limit = 20

@@ -1,4 +1,7 @@
+import logging
 from django.shortcuts import render
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, generics
 from api.models import User
@@ -7,12 +10,17 @@ from rest_framework import viewsets, status, generics, filters
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserRegistrationSerializer, CustomerProfileSerializer, DriverProfileSerializer,RestaurantSerializer,MenuItemSerializer,OrderItemSerializer,OrderSerializer,ReviewSerializer,RestaurantDetailSerializer,OrderDetailSerializer
-from api.pagination import RestaurantPageNumberPagination, OrderCursorPagination, MenuItemPageNumberPagination, ReviewLimitOffsetPagination
-from api.filters import RestaurantFilter, MenuItemFilter, OrderFilter, ReviewFilter
-from api.models import User,CustomerProfile, DriverProfile,Restaurant, MenuItem, Order, OrderItem ,Review
-from api.permissions import IsOwnerOrReadOnly, IsOrderCustomer, IsCustomer, IsDriver, IsRestaurantOwner, IsRestaurantOwnerOrDriver, IsRestaurantOwnerOrReadOnly
-from api.throttles import LocationUpdateThrottle, OrderCreateThrottle, ReviewCreateThrottle
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from .serializers import *
+from api.pagination import *
+from api.filters import *
+from api.models import *
+from api.permissions import *
+from api.throttles import *
+
+logger = logging.getLogger(__name__)
+
 
 class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -31,58 +39,126 @@ class UserRegistrationView(generics.CreateAPIView):
             'access': str(refresh.access_token),  
         }, status=status.HTTP_201_CREATED)  
 
+
 class CustomerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated,IsCustomer]
-    queryset = CustomerProfile.objects.all()
     serializer_class = CustomerProfileSerializer
+    queryset = CustomerProfile.objects.none()
+
+    def get_queryset(self):
+        return CustomerProfile.objects.filter(user=self.request.user)
+
+
+class AddressViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsCustomer]
+    serializer_class = AddressSerializer
+    queryset = Address.objects.none()
+
+    def get_queryset(self):
+        return Address.objects.filter(user = self.request.user)
+        
 
 class DriverViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-    queryset = DriverProfile.objects.all()
+    permission_classes = [IsAuthenticated, IsDriver]
     serializer_class = DriverProfileSerializer
+    queryset = DriverProfile.objects.none()
+
+    def get_queryset(self):
+        return DriverProfile.objects.filter(user=self.request.user)
+
 
 class RestaurantViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated,IsRestaurantOwnerOrReadOnly]
+    # permission_classes = [IsAuthenticated, IsRestaurantOwner, IsOwnerOrReadOnly]
+    # permission_classes = []
     pagination_class = RestaurantPageNumberPagination
     queryset = Restaurant.objects.all()
     serializer_class = RestaurantDetailSerializer
     filterset_class = RestaurantFilter
+    # filter_backends = [DjangoFilterBackend,]
     search_fields = ['name', 'cuisine_type', 'description']
     ordering_fields = ['-average_rating', 'delivery_fee', 'created_at',]
     ordering = ['-created_at']
 
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve', 'menu', 'popular']:
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsRestaurantOwner(), IsOwnerOrReadOnly()]
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return RestaurantDetailSerializer
+        return RestaurantSerializer
+
+    @method_decorator(cache_page(60 * 5), name='dispatch')
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+    
+    @method_decorator(cache_page(60 * 10), name='dispatch')
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+    
+    @method_decorator(cache_page(60 * 15), name='dispatch')
+    @action(detail=True, methods=['get'], url_path='menu')
+    def menu(self, request,  *args, **kwargs):
+        restaurant = self.get_object()
+        items = MenuItem.objects.filter(restaurant_id=restaurant.id, is_available=True)
+        print(items)
+        serializer = MenuItemSerializer(items, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    @method_decorator(cache_page(60 * 30), name='dispatch')
+    @action(detail=False, methods=['get'], url_path='popular')
+    def popular(self, request,  *args, **kwargs):
+        popular = Restaurant.objects.filter(is_open=True).order_by('-average_rating')
+        serializer = RestaurantSerializer(popular, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+
 class MenuItemViewSet(viewsets.ModelViewSet):
-    permission_classes = []
     pagination_class =MenuItemPageNumberPagination
-    queryset = MenuItem.objects.all()
+    # queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
     filterset_class = MenuItemFilter
     search_fields = ['name', 'description']
     ordering_fields = ['price', 'name', 'created_at',]
     ordering = ['-created_at']
 
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), IsRestaurantOwner(), IsOwnerOrReadOnly()]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.user_type == 'restaurant_owner':
+            return MenuItem.objects.filter(restaurant__owner=user).select_related('restaurant')
+        return MenuItem.objects.filter(is_available=True).select_related('restaurant')
+       
+
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class =OrderCursorPagination
-    serializer_class = OrderSerializer
     filterset_class = OrderFilter
     search_fields = ['order_number']
     ordering_fields = ['total_amount',]
     ordering = ['-created_at']
-    # queryset = Order.objects.all()
+
+    def get_serializer_class(self):
+        if self.action in ['retrieve', 'place']:
+            return OrderDetailSerializer
+        if self.action == 'create':
+            return OrderCreateSerializer
+        return OrderSerializer
 
     def get_queryset(self):
-        if self.request.user.user_type == 'customer':
-            x = list(CustomerProfile.objects.filter(user_id = self.request.user.id).values_list("id", flat=True))
-            return Order.objects.filter(customer_id = x[0])
-        
-        elif self.request.user.user_type == 'restaurant_owner':
-            x = list(Restaurant.objects.filter(user_id = self.request.user.id).values_list("id", flat=True))
-            return Order.objects.filter(owner_id = x[0])
-        
-        elif self.request.user.user_type == 'delivery_driver':
-            x = list(DriverProfile.objects.filter(user_id = self.request.user.id).values_list("id", flat=True))
-            return Order.objects.filter(driver_id = x[0])
+        user = self.request.user
+        qs = Order.objects.select_related('customer', 'restaurant', 'driver').prefetch_related('menu_item')
+        if user.user_type == 'customer':
+            return qs.filter(customer__user=user)
+        elif user.user_type == 'restaurant_owner':
+            return qs.filter(restaurant__owner=user)
+        elif user.user_type == 'delivery_driver':
+            return qs.filter(driver__user=user)       
     
     @action(detail=False, methods=['post'], url_path='place', throttle_classes=[OrderCreateThrottle])
     def place(self, request, *args, **kwargs):
@@ -91,12 +167,161 @@ class OrderViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
+        # web socket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"restaurant_{order.restaurant.id}",
+            {
+                "type": "new_order",
+                "order_id": str(order.order_number),
+                "message": "New order received!"
+            }
+        )
         return Response(OrderDetailSerializer(order, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel(self, request,  *args, **kwargs):
+        order = self.get_object()
+        user_type = request.user.user_type
+        print(user_type)
+        if user_type == 'delivery_driver':
+            return Response({'error': 'Driver cannot cancel the order.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not order.can_cancel():
+            return Response({'error': 'This order cannot be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
+        order.status = 'cancelled'
+        order.save(update_fields=['status', 'updated_at'])
+        #web socket
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            f"restaurant_{order.restaurant.id}",
+            {
+                "type": "order_status_update",
+                "order_id": str(order.order_number),
+                "status":order.status,
+                "message": "Order cancelled!"
+            }
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            f"order_{order.order_number}",
+            {
+                "type": "order_status_update",
+                "order_id": str(order.order_number),
+                "status":order.status,
+                "message": "Order cancelled!"
+            }
+        )
+
+        return Response({'success': 'Order cancelled successfully.'})
+
+    @action(detail=True, methods=['post'], url_path='update-status')
+    def update_status(self, request,  *args, **kwargs):
+        if request.user.user_type == 'customer':
+            return Response({'message': 'Only Restaurants and Driver can update order status.'}, status=status.HTTP_403_FORBIDDEN)
+
+        user_type = request.user.user_type
+        order = self.get_object()
+        new_status = request.data.get('status')
+
+        if user_type == 'restaurant_owner':
+            if new_status not in ['confirmed','preparing','ready']:
+                return Response({'error': f'{new_status} status is not valid'})
+            
+            if order.status == 'pending':
+                if new_status != 'confirmed':
+                    return Response({'error': f'Please confirm the order first.'})
+                
+            if order.status == 'confirmed':
+                if new_status != 'preparing':
+                    return Response({'error': f'Please prepare the order first.'})
+                
+            if order.status == 'preparing':
+                if new_status != 'ready':
+                    return Response({'error': f'Please ready the order first.'})
+                
+            return Response({'error': f'You can not do more actions.'})
+            
+        if user_type == 'delivery_driver':
+            if new_status not in ['picked_up','delivered']:
+                return Response({'error': f'{new_status} status is not valid'})
+
+            if order.status == 'ready':
+                if new_status != 'picked_up':
+                    return Response({'error': f'Please pick up the order first.'})
+            
+            if order.status == 'picked_up':
+                if new_status != 'delivered':
+                    return Response({'error': f'Please deliver the order.'})
+
+            return Response({'error': f'You can not do more actions.'})
+
+        order.status = new_status
+        order.save(update_fields=['status', 'updated_at'])
+        #web socket
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"restaurant_{order.restaurant.id}",
+            {
+                "type": "order_status_update",
+                "order_id": str(order.order_number),
+                "status":order.status,
+                "message": "Order status updated!"
+            }
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            f"order_{order.order_number}",
+            {
+                "type": "order_status_update",
+                "order_id": str(order.order_number),
+                "status":order.status,
+                "message": "Order status updated!"
+            }
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            f"driver_{order.driver.id}",
+            {
+                "type": "order_status_update",
+                "order_id": str(order.order_number),
+                "status":order.status,
+                "message": "Order status updated!"
+            }
+        )
+        return Response({'success': f'Order status updated to {new_status}.'})
+
+    # doubt maybe wrong logic
+    @action(detail=True, methods=['post'], url_path='assign-driver')
+    def assign_driver(self, request,  *args, **kwargs):
+        order = self.get_object()
+        try:
+            driver = DriverProfile.objects.get(is_available=True)
+        except DriverProfile.DoesNotExist:
+            return Response({'detail': 'Driver not found.'}, status=status.HTTP_404_NOT_FOUND)
+        order.driver = driver
+        order.save(update_fields=['driver', 'updated_at'])
+        return Response({'detail': f'Driver assigned successfully.'})
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        print(instance)
+        return Response({'error':'You cannot delete the order'},status=status.HTTP_400_BAD_REQUEST)
+    
 class OrderItemViewSet(viewsets.ModelViewSet):
-    permission_classes = []
-    queryset = OrderItem.objects.all()
+    permission_classes = [IsAuthenticated]
     serializer_class = OrderItemSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.user_type == 'customer':
+            return OrderItem.objects.filter(order__customer__user=user)
+        elif user.user_type == 'restaurant_owner':
+            return OrderItem.objects.filter(order__restaurant__owner=user)
+        elif user.user_type == 'delivery_driver':
+            return OrderItem.objects.filter(order__driver__user=user)
+        return OrderItem.objects.none()
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -106,3 +331,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filterset_class = ReviewFilter
     ordering_fields = ['rating',]
     ordering = ['-created_at']
+
+    def perform_create(self, serializer):
+        customer_profile = self.request.user.customer_profile
+        serializer.save(customer=customer_profile)
