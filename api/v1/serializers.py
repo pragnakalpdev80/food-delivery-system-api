@@ -133,14 +133,28 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ['id', 'customer', 'restaurant', 'menu_item', 'order', 'rating', 'comment']  
-        read_only_fields = ['customer']  
+        read_only_fields = ['id']  
+
+    def validate_rating(self,value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("rating should be between 1 and 5")
+        return value
+    
+    def validate(self,data):
+        request = self.context['request']
+        order = data.get('order')
+        if order.status != 'delivered':
+            raise serializers.ValidationError("you can only review delivered orders")
+        if order.customer != request.user.customer_profile:
+            raise serializers.ValidationError("you can only review your own orders")
+        if Review.objects.filter(customer=request.user.customer_profile,order=order).exists():
+            raise serializers.ValidationError("you already reviewed this order")
+        return data
 
 
 class CartItemSerializer(serializers.ModelSerializer):
     menu_item_name = serializers.CharField(source='menu_item.name', read_only=True)
-    menu_item_price = serializers.DecimalField(
-        source='menu_item.price', max_digits=8, decimal_places=2, read_only=True
-    )
+    menu_item_price = serializers.DecimalField(source='menu_item.price', max_digits=8, decimal_places=2, read_only=True)
     subtotal = serializers.SerializerMethodField()
 
     class Meta:
@@ -154,25 +168,37 @@ class CartItemSerializer(serializers.ModelSerializer):
     def validate_menu_item(self, value):
         request = self.context.get('request')
         try:
-            cart = request.user.customer_profile.cart
-        except (AttributeError, Cart.DoesNotExist):
-            return value                  
-        if cart.restaurant and value.restaurant != cart.restaurant:
-            raise serializers.ValidationError(
-                f"Clear your cart first."
-            )
-        return value
+            cart = Cart.objects.get(customer=request.user.customer_profile)
+            print(f"{cart}")
+            existing = CartItem.objects.filter(cart=request.user.customer_profile.cart,menu_item=value.id).first()
+            if existing:
+                raise serializers.ValidationError(f"Item already exists in your cart.")
+        except Cart.DoesNotExist:
+            return value
+        if cart.restaurant == None:
+             print(value.restaurant)
+             cart.restaurant = value.restaurant
+             cart.save()
+             print(cart)
 
+        if cart.restaurant and value.restaurant != cart.restaurant:
+            raise serializers.ValidationError(f"Clear your cart first to add another restaurant's item.")
+        return value
+    
+    def create(self, validated_data):
+        request = self.context.get('request')
+        cart = Cart.objects.get(customer=request.user.customer_profile)
+        validated_data['cart'] = cart
+        return CartItem.objects.create(**validated_data)
 
 class CartSerializer(serializers.ModelSerializer):
     cart_items = CartItemSerializer(many=True, read_only=True)
     total = serializers.SerializerMethodField()
-    restaurant_name = serializers.CharField(source='restaurant.name', read_only=True)
     item_count = serializers.SerializerMethodField()
-
+    
     class Meta:
         model = Cart
-        fields = ['id', 'customer', 'restaurant', 'restaurant_name',
+        fields = ['id', 'customer', 'restaurant',
                   'cart_items', 'total', 'item_count']
         read_only_fields = ['customer', 'restaurant']
 
@@ -190,22 +216,69 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True, write_only=True)
+    # items = OrderItemSerializer(many=True, write_only=True)
 
     class Meta:
         model = Order
-        fields = ['restaurant', 'delivery_address', 'special_instructions', 'items']
+        fields = ['delivery_address', 'special_instructions']
 
+    def validate(self, data):
+        request = self.context.get('request')
+        try:
+            cart = request.user.customer_profile.cart
+        except Cart.DoesNotExist:
+            raise serializers.ValidationError("Your cart is empty.")
+        
+        if not cart.cart_items.exists():
+            raise serializers.ValidationError("Your cart is empty.")
+        subtotal = cart.get_total()
+        if subtotal < cart.restaurant.minimum_order:
+            raise serializers.ValidationError(
+                f"Minimum order is {cart.restaurant.minimum_order}."
+            )        
+        data['cart'] = cart
+        return data
+    
+    def create(self, validated_data):
+        cart = validated_data.pop('cart')
+        request = self.context.get('request')
+        customer_profile = request.user.customer_profile
+
+        subtotal = cart.get_total()
+        delivery_fee = cart.restaurant.delivery_fee
+        from decimal import Decimal
+        tax = round(subtotal * Decimal(0.18),2)
+        total_amount = subtotal + delivery_fee + tax
+        print(cart.restaurant,validated_data)
+        order = Order.objects.create(
+            customer=customer_profile,
+            restaurant = cart.restaurant,
+            subtotal=subtotal,
+            delivery_fee=delivery_fee,
+            tax=tax,
+            total_amount=total_amount,
+            status='pending',
+            **validated_data
+        )
+        print(order)
+
+        for cart_item in cart.cart_items.select_related('menu_item').all():
+            OrderItem.objects.create(
+                order=order,
+                menu_item=cart_item.menu_item,
+                quantity=cart_item.quantity,
+                price=cart_item.menu_item.price,
+                special_instructions=cart_item.special_instructions
+            )
+
+        cart.cart_items.all().delete()
+        cart.restaurant = None
+        cart.save(update_fields=['restaurant', 'updated_at'])
+
+        return order
 
 class OrderSerializer(serializers.ModelSerializer):
-    # delivery_address = serializers.SerializerMethodField()
-
-    # def get_delivery_address(self, obj):
-    #     request = self.context.get('request')
-    #     qs = Address.objects.filter(user=request.user,is_default=True)
-    #     print(qs)
-    #     serializer = AddressSerializer(qs, many=True)
-    #     return serializer.data
+    # delivery_address = serializers.CharField(source='delivery_address.address', read_only=True)
 
     class Meta:
         model = Order
@@ -237,4 +310,3 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 
     def get_is_delivered(self, obj):
         return obj.is_delivered() 
-

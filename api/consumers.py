@@ -1,12 +1,16 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from datetime import datetime
+from django.contrib.auth.models import AnonymousUser
+
 
 class OrderConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         print(f"Connection from: {self.scope['client']}")
         print(f"Path: {self.scope['path']}")
         print(f"User: {self.scope['user']}")
+        
+        user = self.scope['user']
 
         self.order_id = self.scope["url_route"]["kwargs"]["order_number"]
         self.room_group_name = f"order_{self.order_id}"
@@ -19,7 +23,7 @@ class OrderConsumer(AsyncWebsocketConsumer):
             'message': f'Connected to order {self.order_id}.',
             'timestamp': datetime.now().isoformat()
         }))
-
+        
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
             self.room_group_name,self.channel_name
@@ -100,13 +104,13 @@ class DriverDashboardConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.driver_id = self.scope["url_route"]["kwargs"]["driver_id"]
         self.room_group_name = f"driver_{self.driver_id}"
-
+        print(self.room_group_name)
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
         await self.send(text_data=json.dumps({
             'type': 'connection_established',
-            'message': f'Restaurant {self.driver_id} dashboard connected.',
+            'message': f'Driver {self.driver_id} dashboard connected.',
             'timestamp': datetime.now().isoformat()
         }))
 
@@ -124,7 +128,7 @@ class DriverDashboardConsumer(AsyncWebsocketConsumer):
             'timestamp': datetime.now().isoformat()
         }))
 
-    async def order_status_update(self, event):
+    async def order_status_update_driver(self, event):
         print(event)
         await self.send(text_data=json.dumps({
             'type': 'order_status_update',

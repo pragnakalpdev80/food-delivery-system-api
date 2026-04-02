@@ -33,6 +33,9 @@ class JWTAuthMiddleware:
             
             # Get the user from database based on user id and add it to the scope.
             scope['user'] = await self.get_user(data['user_id'])
+            print('Hello')
+            print(scope['user'])
+
         except (TypeError, KeyError, InvalidSignatureError, ExpiredSignatureError, DecodeError):
             # Set the user to Anonymous if token is not valid or expired.
             scope['user'] = AnonymousUser()

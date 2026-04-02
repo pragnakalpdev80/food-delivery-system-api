@@ -2,7 +2,7 @@ import uuid
 from django.utils import timezone
 from datetime import datetime,time
 from django.db import models
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Sum
 from django.contrib.auth.models import AbstractUser,BaseUserManager
 from django.core.validators import MinValueValidator, MaxValueValidator
 
@@ -15,6 +15,7 @@ class TimestampedModel(models.Model):
     class Meta:
         abstract = True 
 
+
 class User(AbstractUser,TimestampedModel):
    """ Custom User Model """
    USER_TYPE_CHOICES = (
@@ -26,6 +27,7 @@ class User(AbstractUser,TimestampedModel):
    
    def __str__(self):
        return f"{self.username} ({self.user_type})"
+
 
 class Address(TimestampedModel):
     """ Customer Address Model """
@@ -43,9 +45,10 @@ class Address(TimestampedModel):
     def __str__(self):
         return f"{self.user} - {self.address}"
 
+
 class CustomerProfile(TimestampedModel):
     """ Customer Profile Model """
-    user = models.OneToOneField(User,on_delete=models.CASCADE)
+    user = models.OneToOneField(User,on_delete=models.CASCADE, related_name='customer_profile')
     avatar = models.ImageField(default='default.jpg', upload_to='customer_avatar')
     # default_address = models.TextField()
     # saved_addresses = models.JSONField()
@@ -64,6 +67,7 @@ class CustomerProfile(TimestampedModel):
     
     def __str__(self):
        return "{}".format(self.user)
+
 
 class DriverProfile(TimestampedModel):
     """ Driver Profile Model """
@@ -93,6 +97,7 @@ class DriverProfile(TimestampedModel):
             'average_rating': self.average_rating,
         }
     
+
 class Restaurant(TimestampedModel):
     """ Restaurant Model """
     CUISINE_CHOICES = (
@@ -124,9 +129,8 @@ class Restaurant(TimestampedModel):
         return self.opening_time <= current_time <= self.closing_time
 
     def update_average_rating(self):
-        reviews = self.review_set.all()
         result = self.review_set.aggregate(avg=Avg('rating'), count=Count('id'))
-        self.average_rating = round(result['avg'],2)
+        self.average_rating = round(result['avg'])
         self.total_reviews = result['count']
         self.save(update_fields=['average_rating', 'total_reviews', 'updated_at'])
 
@@ -154,26 +158,31 @@ class MenuItem(TimestampedModel):
     preparation_time = models.IntegerField()
 
     def __str__(self):
-       return "{}".format(self.name)
+       return f"{self.name}"
+
 
 class Cart(TimestampedModel):
-    customer =  models.ForeignKey(CustomerProfile,on_delete=models.CASCADE,related_name="cart",db_index=True)
-    restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,related_name="carts",db_index=True)
-
+    customer = models.OneToOneField(CustomerProfile, on_delete=models.CASCADE, related_name="cart")
+    restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,related_name="carts",null=True,blank=True,db_index=True)
+        
     def __str__(self):
-        return f"{self.customer.user}"
+        return f"{self.customer} : {self.restaurant}"
     
-
+    def get_total(self):
+        total = sum(item.get_subtotal() for item in self.cart_items.all())
+        return total
+    
 class CartItem(TimestampedModel):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_items')
     menu_item = models.ForeignKey(MenuItem,on_delete=models.CASCADE,related_name='added_item')
     quantity = models.PositiveIntegerField()
+    special_instructions = models.TextField(null=True)
 
     def get_subtotal(self):
         return self.menu_item.price * self.quantity
    
     def __str__(self):
-        return f"{self.user} : {self.menu_item}:{self.quantity}"
+        return f"{self.cart.customer} : {self.menu_item} - {self.quantity}"
 
 
 class Order(TimestampedModel):
@@ -183,7 +192,7 @@ class Order(TimestampedModel):
         ("picked_up","Picked Up"), ("delivered","Delivered"), ("cancelled","Cancelled")
     )
 
-    customer =  models.ForeignKey(CustomerProfile,on_delete=models.CASCADE,related_name="orders",db_index=True)
+    customer =  models.ForeignKey(CustomerProfile,on_delete=models.CASCADE,related_name="order",db_index=True)
     restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,related_name="orders",db_index=True)
     driver = models.ForeignKey(DriverProfile,on_delete=models.CASCADE,null=True)
     order_number =models.UUIDField(default=uuid.uuid4)
@@ -198,7 +207,7 @@ class Order(TimestampedModel):
     actual_delivery_time = models.DateTimeField(null=True)
 
     def __str__(self):
-       return "{}".format(self.order_number)
+       return f"{self.order_number}"
     
     def calculate_total(self):
         return self.subtotal+self.delivery_fee+self.tax
@@ -208,7 +217,8 @@ class Order(TimestampedModel):
            
     def is_delivered(self):
         return self.status == 'delivered'
-    
+
+
 class OrderItem(models.Model):
     """ Orders Items Model """
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='menu_item')
@@ -219,11 +229,12 @@ class OrderItem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True,db_index=True)
 
     def __str__(self):
-       return "{}".format(self.menu_item)
+       return f"{self.menu_item}"
+
 
 class Review(TimestampedModel):
     """ Orders Review Model """
-    customer = models.ForeignKey(CustomerProfile,on_delete=models.CASCADE,db_index=True)
+    customer = models.ForeignKey(CustomerProfile,on_delete=models.CASCADE,db_index=True, related_name='review')
     restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,null=True,db_index=True)
     menu_item = models.ForeignKey(MenuItem,on_delete=models.CASCADE,null=True)
     order = models.ForeignKey(Order,on_delete=models.CASCADE)
@@ -231,4 +242,4 @@ class Review(TimestampedModel):
     comment = models.TextField(null=True)
 
     def __str__(self):
-       return "{}".format(self.customer)
+       return f"{self.customer}: {self.order}: {self.rating}"

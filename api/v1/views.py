@@ -1,4 +1,5 @@
 import logging
+from django.utils import timezone
 from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
@@ -133,7 +134,33 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         if user.user_type == 'restaurant_owner':
             return MenuItem.objects.filter(restaurant__owner=user).select_related('restaurant')
         return MenuItem.objects.filter(is_available=True).select_related('restaurant')
-       
+
+
+class CartViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsCustomer]
+    serializer_class = CartSerializer
+
+    def get_queryset(self):
+        return Cart.objects.prefetch_related('cart_items', 'cart_items__menu_item').filter(customer=self.request.user.customer_profile)
+
+    @action(detail=False, methods=['delete'], url_path='clear')
+    def clear(self, request):
+        try:
+            cart = request.user.customer_profile.cart
+            cart.cart_items.all().delete()
+            cart.restaurant = None
+            cart.save(update_fields=['restaurant', 'updated_at'])
+        except Cart.DoesNotExist:
+            pass
+        return Response({'success': 'Cart cleared.'})
+
+
+class CartItemViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, IsCustomer]
+    serializer_class = CartItemSerializer
+
+    def get_queryset(self):
+        return CartItem.objects.filter(cart__customer=self.request.user.customer_profile).select_related('menu_item')
 
 class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -144,9 +171,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
-        if self.action in ['retrieve', 'place']:
+        if self.action in ['retrieve']:
             return OrderDetailSerializer
-        if self.action == 'create':
+        if self.action == 'place':
             return OrderCreateSerializer
         return OrderSerializer
 
@@ -165,18 +192,19 @@ class OrderViewSet(viewsets.ModelViewSet):
         if request.user.user_type != 'customer':
             return Response({'message': 'Only customers can place orders.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data, context={'request': request})
+        print(serializer)
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
         # web socket
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"restaurant_{order.restaurant.id}",
-            {
-                "type": "new_order",
-                "order_id": str(order.order_number),
-                "message": "New order received!"
-            }
-        )
+        # channel_layer = get_channel_layer()
+        # async_to_sync(channel_layer.group_send)(
+        #     f"restaurant_{order.restaurant.id}",
+        #     {
+        #         "type": "new_order",
+        #         "order_id": str(order.order_number),
+        #         "message": "New order received!"
+        #     }
+        # )
         return Response(OrderDetailSerializer(order, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'], url_path='cancel')
@@ -228,36 +256,47 @@ class OrderViewSet(viewsets.ModelViewSet):
             if new_status not in ['confirmed','preparing','ready']:
                 return Response({'error': f'{new_status} status is not valid'})
             
-            if order.status == 'pending':
+            elif order.status == 'pending':
                 if new_status != 'confirmed':
                     return Response({'error': f'Please confirm the order first.'})
                 
-            if order.status == 'confirmed':
+            elif order.status == 'confirmed':
                 if new_status != 'preparing':
                     return Response({'error': f'Please prepare the order first.'})
                 
-            if order.status == 'preparing':
+            elif order.status == 'preparing':
                 if new_status != 'ready':
                     return Response({'error': f'Please ready the order first.'})
-                
-            return Response({'error': f'You can not do more actions.'})
+
+            else:
+                return Response({'error': f'You can not do more actions.'})
             
         if user_type == 'delivery_driver':
             if new_status not in ['picked_up','delivered']:
                 return Response({'error': f'{new_status} status is not valid'})
 
-            if order.status == 'ready':
+            elif order.status == 'ready':
                 if new_status != 'picked_up':
                     return Response({'error': f'Please pick up the order first.'})
             
-            if order.status == 'picked_up':
+            elif order.status == 'picked_up':
                 if new_status != 'delivered':
                     return Response({'error': f'Please deliver the order.'})
 
-            return Response({'error': f'You can not do more actions.'})
+            else:
+                return Response({'error': f'You can not do more actions.'})
 
         order.status = new_status
         order.save(update_fields=['status', 'updated_at'])
+        if order.status == 'delivered':
+            order.actual_delivery_time = timezone.localtime(timezone.now()).time()
+            order.save(update_fields=['actual_delivery_time'])
+            print(order.driver.id)
+            driver = DriverProfile.objects.filter(id=order.driver.id).first()
+            print(driver)
+            driver.update_availability(True)
+            driver.save()
+    
         #web socket
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -279,9 +318,46 @@ class OrderViewSet(viewsets.ModelViewSet):
                 "message": "Order status updated!"
             }
         )
+        
+        if order.driver:
+            async_to_sync(channel_layer.group_send)(
+                f"driver_{order.driver.id}",
+                {
+                    "type": "order_status_update_driver",
+                    "order_id": str(order.order_number),
+                    "status":order.status,
+                    "message": "Order status updated!"
+                }
+            )
+        return Response({'success': f'Order status updated to {new_status}.'})
 
+    # doubt maybe wrong logic
+    @action(detail=True, methods=['post'], url_path='assign-driver')
+    def assign_driver(self, request,  *args, **kwargs):
+        order = self.get_object()
+        if order.driver:
+            return Response({'error': f'Driver is assigned. You cannot assign driver again'},400)
+    
+        try:
+            driver = DriverProfile.objects.filter(is_available=True).first()
+        except DriverProfile.DoesNotExist:
+            return Response({'detail': 'Driver not found.'}, status=status.HTTP_404_NOT_FOUND)
+        order.driver = driver
+        driver.update_availability(False)
+        driver.save()
+        channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            f"driver_{order.driver.id}",
+                f"driver_{order.driver.id}",
+                {
+                    "type": "order_status_update_driver",
+                    "order_id": str(order.order_number),
+                    "status":order.status,
+                    "message": "Order status updated!"
+                }
+            )
+        
+        async_to_sync(channel_layer.group_send)(
+            f"order_{order.order_number}",
             {
                 "type": "order_status_update",
                 "order_id": str(order.order_number),
@@ -289,17 +365,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 "message": "Order status updated!"
             }
         )
-        return Response({'success': f'Order status updated to {new_status}.'})
 
-    # doubt maybe wrong logic
-    @action(detail=True, methods=['post'], url_path='assign-driver')
-    def assign_driver(self, request,  *args, **kwargs):
-        order = self.get_object()
-        try:
-            driver = DriverProfile.objects.get(is_available=True)
-        except DriverProfile.DoesNotExist:
-            return Response({'detail': 'Driver not found.'}, status=status.HTTP_404_NOT_FOUND)
-        order.driver = driver
         order.save(update_fields=['driver', 'updated_at'])
         return Response({'detail': f'Driver assigned successfully.'})
     
@@ -308,6 +374,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         print(instance)
         return Response({'error':'You cannot delete the order'},status=status.HTTP_400_BAD_REQUEST)
     
+
 class OrderItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = OrderItemSerializer
