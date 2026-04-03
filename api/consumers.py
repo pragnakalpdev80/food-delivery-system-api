@@ -100,6 +100,43 @@ class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
             'timestamp': datetime.now().isoformat()
         }))
 
+class CustomerDashboardConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.customer_id = self.scope["url_route"]["kwargs"]["customer_id"]
+        self.room_group_name = f"customer_{self.customer_id}"
+
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+        await self.accept()
+
+        await self.send(text_data=json.dumps({
+            'type': 'connection_established',
+            'message': f'Customer {self.customer_id} dashboard connected.',
+            'timestamp': datetime.now().isoformat()
+        }))
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        pass
+
+    async def new_order(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'new_order',
+            'order_id': event['order_id'],
+            'message': event['message'],
+            'timestamp': datetime.now().isoformat()
+        }))
+
+    async def order_status_update(self, event):
+        print(event)
+        await self.send(text_data=json.dumps({
+            'type': 'order_status_update',
+            'status': event['status'],
+            'message': event['message'],
+            'timestamp': datetime.now().isoformat()
+        }))
+
 class DriverDashboardConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.driver_id = self.scope["url_route"]["kwargs"]["driver_id"]
@@ -129,7 +166,6 @@ class DriverDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def order_status_update_driver(self, event):
-        print(event)
         await self.send(text_data=json.dumps({
             'type': 'order_status_update',
             'status': event['status'],

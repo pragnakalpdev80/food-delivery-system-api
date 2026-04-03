@@ -107,9 +107,9 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
         items = obj.menu_items.filter(is_available=True)
         return MenuItemSerializer(items, many=True).data
 
-    # def get_reviews(self, obj):
-    #     reviews = obj.reviews.all().order_by('-created_at')
-    #     return ReviewSerializer(reviews, many=True).data
+    def get_reviews(self, obj):
+        reviews = obj.reviews.all().order_by('-created_at')
+        return ReviewSerializer(reviews, many=True).data
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
@@ -216,8 +216,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
-    # items = OrderItemSerializer(many=True, write_only=True)
-
     class Meta:
         model = Order
         fields = ['delivery_address', 'special_instructions']
