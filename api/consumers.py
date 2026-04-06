@@ -9,10 +9,10 @@ class OrderConsumer(AsyncWebsocketConsumer):
         if isinstance(self.scope['user'], AnonymousUser):
             await self.close()
             return
-        print(f"Connection from: {self.scope['client']}")
-        print(f"Path: {self.scope['path']}")
-        print(f"User: {self.scope['user']}")
-        print(f"User: {self.scope['user'].user_type}")
+         # print(f"Connection from: {self.scope['client']}")
+         # print(f"Path: {self.scope['path']}")
+         # print(f"User: {self.scope['user']}")
+         # print(f"User: {self.scope['user'].user_type}")
         user = self.scope['user']
 
         self.order_id = self.scope["url_route"]["kwargs"]["order_number"]
@@ -107,7 +107,7 @@ class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def order_status_update(self, event):
-        print(event)
+         # print(event)
         await self.send(text_data=json.dumps({
             'type': 'order_status_update',
             'status': event['status'],

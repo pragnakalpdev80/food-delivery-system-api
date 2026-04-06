@@ -26,7 +26,7 @@ def validate_amount(value):
     return value 
 
 # def validate_driver(self,value):
-#     print(DriverProfile.objects.filter(id=value,is_available=True).query)
+#      # print(DriverProfile.objects.filter(id=value,is_available=True).query)
 #     if value == DriverProfile.objects.filter(id=value,is_available=True):
 #         raise serializers.ValidationError(f"{value} is not proper value for priority")
 #     return value

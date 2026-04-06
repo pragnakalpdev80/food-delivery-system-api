@@ -32,8 +32,8 @@ def create_cart_on_customer_creation(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Order)
 def create_cart(sender, instance, created, **kwargs):
     if created:
-        print("Hello")
-        print(instance.restaurant.id)
+         # print("Hello")
+         # print(instance.restaurant.id)
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
             f"restaurant_{instance.restaurant.id}",

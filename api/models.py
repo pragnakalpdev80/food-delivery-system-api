@@ -16,7 +16,15 @@ class TimestampedModel(models.Model):
         abstract = True 
 
 
-class User(AbstractUser,TimestampedModel):
+class SoftDeleteModel(models.Model):
+    """ Soft Delete Model """
+    is_deleted = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True 
+
+
+class User(AbstractUser, TimestampedModel, SoftDeleteModel):
    """ Custom User Model """
    USER_TYPE_CHOICES = (
         ('customer',"Customer"),('restaurant_owner',"Restaurant Owner"),('delivery_driver',"Delivery Driver"),
@@ -29,7 +37,7 @@ class User(AbstractUser,TimestampedModel):
        return f"{self.username} ({self.user_type})"
 
 
-class Address(TimestampedModel):
+class Address(TimestampedModel, SoftDeleteModel):
     """ Customer Address Model """
     address_name = models.CharField(max_length=60)
     address = models.TextField()
@@ -46,7 +54,7 @@ class Address(TimestampedModel):
         return f"{self.user} - {self.address}"
 
 
-class CustomerProfile(TimestampedModel):
+class CustomerProfile(TimestampedModel, SoftDeleteModel):
     """ Customer Profile Model """
     user = models.OneToOneField(User,on_delete=models.CASCADE, related_name='customer_profile')
     avatar = models.ImageField(default='default.jpg', upload_to='customer_avatar')
@@ -69,7 +77,7 @@ class CustomerProfile(TimestampedModel):
        return "{}".format(self.user)
 
 
-class DriverProfile(TimestampedModel):
+class DriverProfile(TimestampedModel, SoftDeleteModel):
     """ Driver Profile Model """
     VEHICLE_CHOICES = (
         ('bike',"Bike"),('scooter',"Scooter"),('car',"Car"),
@@ -98,7 +106,7 @@ class DriverProfile(TimestampedModel):
         }
     
 
-class Restaurant(TimestampedModel):
+class Restaurant(TimestampedModel, SoftDeleteModel):
     """ Restaurant Model """
     CUISINE_CHOICES = (
         ("italian","Italian"), ("chinese","Chinese"), ("indian","Indian"), ("mexican","Mexican"), 
@@ -135,7 +143,7 @@ class Restaurant(TimestampedModel):
         self.save(update_fields=['average_rating', 'total_reviews', 'updated_at'])
 
 
-class MenuItem(TimestampedModel):
+class MenuItem(TimestampedModel,SoftDeleteModel):
     """ Restaurants Menu Items Model """
     CATEGORY_CHOICES = (
         ("appetizer","Appetizer"), ("main_course","Main Course"), ("dessert","Dessert"), 

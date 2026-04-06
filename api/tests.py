@@ -25,7 +25,7 @@ def customer():
         phone_no='9856748591',
         user_type='customer'
     )
-    print(f"Customer Created")
+     # print(f"Customer Created")
     return user
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def delivery_driver():
         phone_no='9856948591',
         user_type='delivery_driver'
     )
-    print(f"Driver Created")
+     # print(f"Driver Created")
     return user
 
 @pytest.fixture
@@ -53,7 +53,7 @@ def restaurant_owner():
         phone_no='9809948591',
         user_type='restaurant_owner'
     )
-    print(f"Driver Created")
+     # print(f"Driver Created")
     return user
 
 @pytest.fixture
@@ -72,7 +72,7 @@ def restaurant(db,restaurant_owner):
         delivery_fee=30.00,
         minimum_order=100,
     )
-    print(f"Restaurant {restaurant} Created")
+     # print(f"Restaurant {restaurant} Created")
     return restaurant
 
 @pytest.fixture

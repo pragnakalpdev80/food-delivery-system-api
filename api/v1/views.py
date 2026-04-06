@@ -52,21 +52,34 @@ class UserRegistrationView(generics.CreateAPIView):
             'access': str(refresh.access_token),  
         }, status=status.HTTP_201_CREATED)  
 
-
+@extend_schema_view(
+    post=extend_schema(
+        summary="Customer Profile",
+        description=" Endpoint for customers to see and update their profiles.",
+        tags=["Customers"],
+    ))
 class CustomerViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated,IsCustomer]
     serializer_class = CustomerProfileSerializer
     def get_queryset(self):
         return CustomerProfile.objects.filter(user=self.request.user)
 
-
+@extend_schema_view(
+    post=extend_schema(
+        summary="Customer Address",
+        description=" Endpoint for customers' address customers can add, update and delete addresses.",
+        tags=["Userbase"],
+    ))
 class AddressViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = AddressSerializer
 
     def get_queryset(self):
-        return Address.objects.filter(user = self.request.user)
-        
+        return Address.objects.filter(user = self.request.user,is_deleted=False)
+    
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save()
 
 @extend_schema_view()
 class DriverViewSet(viewsets.ModelViewSet):
@@ -74,13 +87,17 @@ class DriverViewSet(viewsets.ModelViewSet):
     serializer_class = DriverProfileSerializer
 
     def get_queryset(self):
-        return DriverProfile.objects.filter(user=self.request.user)
+        return DriverProfile.objects.filter(user=self.request.user,is_deleted=False)
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save()
 
 
 class RestaurantViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsRestaurantOwner, IsOwnerOrReadOnly]
     pagination_class = RestaurantPageNumberPagination
-    queryset = Restaurant.objects.all()
+    queryset = Restaurant.objects.filter(is_deleted=False)
     serializer_class = RestaurantDetailSerializer
     filterset_class = RestaurantFilter
     filter_backends = [DjangoFilterBackend,filters.SearchFilter,filters.OrderingFilter]
@@ -97,6 +114,10 @@ class RestaurantViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return RestaurantDetailSerializer
         return RestaurantSerializer
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save()
 
     @method_decorator(cache_page(60 * 5), name='list_restaurant')
     def list(self, request, *args, **kwargs):
@@ -119,7 +140,7 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     def menu(self, request,  *args, **kwargs):
         restaurant = self.get_object()
         items = MenuItem.objects.filter(restaurant_id=restaurant.id, is_available=True)
-        print(items)
+          # print(items)
         serializer = MenuItemSerializer(items, many=True, context={'request': request})
         return Response(serializer.data,status=status.HTTP_200_OK)
 
@@ -149,8 +170,12 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'restaurant_owner':
-            return MenuItem.objects.filter(restaurant__owner=user).select_related('restaurant')
-        return MenuItem.objects.filter(is_available=True).select_related('restaurant')
+            return MenuItem.objects.filter(restaurant__owner=user,is_deleted=False).select_related('restaurant')
+        return MenuItem.objects.filter(is_available=True,is_deleted=False).select_related('restaurant')
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save()
 
 
 class CartViewSet(viewsets.ModelViewSet):
@@ -220,7 +245,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         if request.user.user_type != 'customer':
             return Response({'message': 'Only customers can place orders.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data, context={'request': request})
-        print(serializer)
+          # print(serializer)
         serializer.is_valid(raise_exception=True)
         order = serializer.save()
         # web socket
@@ -239,7 +264,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     def cancel(self, request,  *args, **kwargs):
         order = self.get_object()
         user_type = request.user.user_type
-        print(user_type)
+         # print(user_type)
         if user_type == 'delivery_driver':
             return Response({'error': 'Driver cannot cancel the order.'}, status=status.HTTP_400_BAD_REQUEST)
         if not order.can_cancel():
@@ -248,7 +273,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.save(update_fields=['status', 'updated_at'])
         if order.driver:
             driver = DriverProfile.objects.filter(id=order.driver.id).first()
-            print(driver)
+             # print(driver)
             driver.update_availability(True)
             driver.save(update_fields=['updated_at','is_available'])
         #web socket
@@ -333,9 +358,9 @@ class OrderViewSet(viewsets.ModelViewSet):
         if order.status == 'delivered':
             order.actual_delivery_time = datetime.now()
             order.save(update_fields=['actual_delivery_time'])
-            # print(order.driver.id)
+              # print(order.driver.id)
             driver = DriverProfile.objects.filter(id=order.driver.id).first()
-            # print(driver)
+              # print(driver)
             driver.update_availability(True)
             driver.save(update_fields=['updated_at','is_available'])
         #web socket

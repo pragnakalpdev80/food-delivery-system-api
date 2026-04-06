@@ -33,7 +33,7 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'total_orders', 'loyalty_points']  
 
     def get_default_address(self, obj):
-        print(obj)
+         # print(obj)
         address = obj.default_address      
         if address:
             return AddressSerializer(address).data
@@ -100,7 +100,7 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ['average_rating', 'total_reviews', 'owner']
 
     def get_is_open_now(self, obj):
-        print(obj)
+         # print(obj)
         return obj.is_currently_open()
     
     def get_menu_items(self, obj):
@@ -169,17 +169,17 @@ class CartItemSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         try:
             cart = Cart.objects.get(customer=request.user.customer_profile)
-            print(f"{cart}")
+             # print(f"{cart}")
             existing = CartItem.objects.filter(cart=request.user.customer_profile.cart,menu_item=value).first()
             if existing:
                 raise serializers.ValidationError(f"Item already exists in your cart.")
         except Cart.DoesNotExist:
             return value
         if cart.restaurant == None:
-             print(value.restaurant)
+              # print(value.restaurant)
              cart.restaurant = value.restaurant
              cart.save()
-             print(cart)
+              # print(cart)
 
         if cart.restaurant and value.restaurant != cart.restaurant:
             raise serializers.ValidationError(f"Clear your cart first to add another restaurant's item.")
@@ -252,8 +252,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         from decimal import Decimal
         tax = round(subtotal * Decimal(0.18),2)
         total_amount = subtotal + delivery_fee + tax
-        print(cart.restaurant,validated_data)
-        print(datetime.now() + timedelta(seconds=30*60))
+         # print(cart.restaurant,validated_data)
+         # print(datetime.now() + timedelta(seconds=30*60))
         order = Order.objects.create(
             customer=customer_profile,
             restaurant = cart.restaurant,
@@ -265,7 +265,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             estimated_delivery_time= datetime.now() + timedelta(seconds=30*60),
             **validated_data
         )
-        # print(order)
+          # print(order)
 
         for cart_item in cart.cart_items.select_related('menu_item').all():
             OrderItem.objects.create(
