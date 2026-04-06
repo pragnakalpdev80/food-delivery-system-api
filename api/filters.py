@@ -18,7 +18,7 @@ class MenuItemFilter(django_filters.FilterSet):
         fields = ['restaurant', 'category', 'dietary_info', 'is_available', 'price__lte']
 
 class OrderFilter(django_filters.FilterSet):
-    created_at__gte = django_filters.NumberFilter(field_name='created_at', lookup_expr='gte')
+    created_at__gte = django_filters.DateTimeFilter(field_name='created_at', lookup_expr='gte')
 
     class Meta:
         model = Order

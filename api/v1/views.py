@@ -246,9 +246,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             return Response({'error': 'This order cannot be cancelled.'}, status=status.HTTP_400_BAD_REQUEST)
         order.status = 'cancelled'
         order.save(update_fields=['status', 'updated_at'])
+        if order.driver:
+            driver = DriverProfile.objects.filter(id=order.driver.id).first()
+            print(driver)
+            driver.update_availability(True)
+            driver.save(update_fields=['updated_at','is_available'])
         #web socket
         channel_layer = get_channel_layer()
-
         async_to_sync(channel_layer.group_send)(
             f"restaurant_{order.restaurant.id}",
             {
@@ -333,8 +337,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             driver = DriverProfile.objects.filter(id=order.driver.id).first()
             print(driver)
             driver.update_availability(True)
-            driver.save()
-    
+            driver.save(update_fields=['updated_at','is_available'])
         #web socket
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(

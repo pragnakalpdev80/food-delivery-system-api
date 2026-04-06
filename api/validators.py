@@ -17,7 +17,7 @@ def validate_image_size_5mb(value):
 def validate_image_size_10mb(value):
     MAX_10MB_FILE_SIZE = 10*1024*1024
     if value.size > MAX_10MB_FILE_SIZE:
-        raise serializers.ValidationError("Image Upload Limit : 5 MB")
+        raise serializers.ValidationError("Image Upload Limit : 10 MB")
     return value
 
 def validate_amount(value):

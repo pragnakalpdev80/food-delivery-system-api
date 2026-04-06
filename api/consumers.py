@@ -6,6 +6,9 @@ from django.contrib.auth.models import AnonymousUser
 
 class OrderConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        if isinstance(self.scope['user'], AnonymousUser):
+            await self.close()
+            return
         print(f"Connection from: {self.scope['client']}")
         print(f"Path: {self.scope['path']}")
         print(f"User: {self.scope['user']}")
@@ -65,6 +68,9 @@ class OrderConsumer(AsyncWebsocketConsumer):
 
 class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        if isinstance(self.scope['user'], AnonymousUser):
+            await self.close()
+            return
         self.restaurant_id = self.scope["url_route"]["kwargs"]["restaurant_id"]
         self.room_group_name = f"restaurant_{self.restaurant_id}"
 
@@ -102,6 +108,9 @@ class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
 
 class CustomerDashboardConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        if isinstance(self.scope['user'], AnonymousUser):
+            await self.close()
+            return
         self.customer_id = self.scope["url_route"]["kwargs"]["customer_id"]
         self.room_group_name = f"customer_{self.customer_id}"
 
@@ -138,7 +147,11 @@ class CustomerDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
 class DriverDashboardConsumer(AsyncWebsocketConsumer):
+    
     async def connect(self):
+        if isinstance(self.scope['user'], AnonymousUser):
+            await self.close()
+            return
         self.driver_id = self.scope["url_route"]["kwargs"]["driver_id"]
         self.room_group_name = f"driver_{self.driver_id}"
         print(self.room_group_name)

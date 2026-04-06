@@ -165,10 +165,10 @@ REST_FRAMEWORK = {
         'review_create': '10/hour',
         'location_update': '500/hour',
     },
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
-    'DEFAULT_VERSION': 'v1',
-    'ALLOWED_VERSIONS': ['v1', 'v2'],
-    'VERSION_PARAM': 'version',
+    # 'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    # 'DEFAULT_VERSION': 'v1',
+    # 'ALLOWED_VERSIONS': ['v1', 'v2'],
+    # 'VERSION_PARAM': 'version',
 
     'DEFAULT_FILTER_BACKENDS': [
         # DjangoFilterBackend: Handles filtering with django-filter (exact matches, ranges, etc.)

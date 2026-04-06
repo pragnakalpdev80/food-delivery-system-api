@@ -60,7 +60,7 @@ class DriverProfileSerializer(serializers.ModelSerializer):
         model = DriverProfile
         fields = ['user', 'avatar', 'vehicle_type', 'vehicle_number',
                   'license_number', 'is_available', 'total_deliveries', 'average_rating']
-        read_only_fields = ['user', 'total_deliveries', 'average_rating']  
+        read_only_fields = ['user', 'total_deliveries', 'average_rating','delivery_stats']  
 
     def get_delivery_stats(self, obj):
         return obj.get_delivery_stats()
@@ -133,7 +133,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ['id', 'customer', 'restaurant', 'menu_item', 'order', 'rating', 'comment']  
-        read_only_fields = ['id']  
+        read_only_fields = ['id', 'customer']
 
     def validate_rating(self,value):
         if value < 1 or value > 5:
@@ -170,7 +170,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         try:
             cart = Cart.objects.get(customer=request.user.customer_profile)
             print(f"{cart}")
-            existing = CartItem.objects.filter(cart=request.user.customer_profile.cart,menu_item=value.id).first()
+            existing = CartItem.objects.filter(cart=request.user.customer_profile.cart,menu_item=value).first()
             if existing:
                 raise serializers.ValidationError(f"Item already exists in your cart.")
         except Cart.DoesNotExist:
@@ -222,6 +222,11 @@ class OrderCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context.get('request')
+        address = data.get('delivery_address')
+        if address and address.user != request.user:
+            raise serializers.ValidationError(
+                {'delivery_address': 'This address does not belong to you.'}
+            )
         try:
             cart = request.user.customer_profile.cart
         except Cart.DoesNotExist:
