@@ -182,37 +182,16 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    # How long access token is valid (short = more secure, but users need to refresh more often)
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=600),
-    
-    # How long refresh token is valid (longer = users stay logged in longer)
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),   
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    
-    # Security: Issue new refresh token when old one is used (prevents token reuse)
     'ROTATE_REFRESH_TOKENS': True,
-    
-    # Security: Add old refresh token to blacklist after rotation (prevents reuse)
     'BLACKLIST_AFTER_ROTATION': True,
-    
-    # Track when user last logged in (useful for security monitoring)
     'UPDATE_LAST_LOGIN': True,
-    
-    # Algorithm to sign tokens (HS256 = HMAC SHA-256, fast and secure)
     'ALGORITHM': 'HS256',
-    
-    # Secret key to sign tokens (use Django's SECRET_KEY for security)
     'SIGNING_KEY': SECRET_KEY,
-    
-    # Token type in Authorization header (Bearer is standard OAuth2 format)
     'AUTH_HEADER_TYPES': ('Bearer',),
-    
-    # Header name where token is sent (HTTP_AUTHORIZATION = "Authorization: Bearer <token>")
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
-    
-    # Which User model field to use as user ID (usually 'id')
     'USER_ID_FIELD': 'id',
-    
-    # Where to store user ID in token payload (used when decoding token)
     'USER_ID_CLAIM': 'user_id',
 }
 

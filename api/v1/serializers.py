@@ -1,7 +1,7 @@
 from rest_framework import serializers
+from datetime import datetime, timedelta
 from api.models import *
 from api.validators import *
-
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, style={'input_type': 'password'})
@@ -253,6 +253,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         tax = round(subtotal * Decimal(0.18),2)
         total_amount = subtotal + delivery_fee + tax
         print(cart.restaurant,validated_data)
+        print(datetime.now() + timedelta(seconds=30*60))
         order = Order.objects.create(
             customer=customer_profile,
             restaurant = cart.restaurant,
@@ -261,7 +262,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             tax=tax,
             total_amount=total_amount,
             status='pending',
-            estimated_delivery_time=datetime.datetime.now() + datetime.timedelta(seconds=30*60)
+            estimated_delivery_time= datetime.now() + timedelta(seconds=30*60),
             **validated_data
         )
         # print(order)

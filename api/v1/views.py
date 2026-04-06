@@ -331,7 +331,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.status = new_status
         order.save(update_fields=['status', 'updated_at'])
         if order.status == 'delivered':
-            order.actual_delivery_time = timezone.localtime(timezone.now()).time()
+            order.actual_delivery_time = datetime.now()
             order.save(update_fields=['actual_delivery_time'])
             # print(order.driver.id)
             driver = DriverProfile.objects.filter(id=order.driver.id).first()
