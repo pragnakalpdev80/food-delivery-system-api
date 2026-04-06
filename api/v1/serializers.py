@@ -261,6 +261,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             tax=tax,
             total_amount=total_amount,
             status='pending',
+            estimated_delivery_time=datetime.datetime.now() + datetime.timedelta(seconds=30*60)
             **validated_data
         )
         print(order)
