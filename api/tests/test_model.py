@@ -1,7 +1,4 @@
 from django.test import TestCase
-
-# Create your tests here.
-# api/tests.py
 import pytest
 from api.models import *
 from rest_framework.test import APIClient
@@ -12,10 +9,14 @@ def api_client():
 
 @pytest.fixture
 def user():
-    return User.objects.create_user(username='testuser', password='testpass123')
+    return User.objects.filter(username='pytest_r', password='Hill@1234').first()
 
 @pytest.fixture
-def customer():
+def restaurant(user):
+    return Restaurant.objects.filter(owner=user).first()
+
+@pytest.mark.django_db
+def test_customer():
     user = User.objects.create_user(
         email='testcustomer@gmail.com',
         password='testpass123',
@@ -25,11 +26,11 @@ def customer():
         phone_no='9856748591',
         user_type='customer'
     )
-     # print(f"Customer Created")
-    return user
+    print(f"Customer {user} Created.")
+    assert user
 
-@pytest.fixture
-def delivery_driver():
+@pytest.mark.django_db
+def test_delivery_driver():
     user = User.objects.create_user(
         email='testdriver@gmail.com',
         password='testpass123',
@@ -39,11 +40,11 @@ def delivery_driver():
         phone_no='9856948591',
         user_type='delivery_driver'
     )
-     # print(f"Driver Created")
-    return user
+    print(f"Driver {user} Created.")
+    assert user
 
-@pytest.fixture
-def restaurant_owner():
+@pytest.mark.django_db
+def test_restaurant_owner():
     user = User.objects.create_user(
         email='testro@gmail.com',
         password='testpass123',
@@ -53,13 +54,13 @@ def restaurant_owner():
         phone_no='9809948591',
         user_type='restaurant_owner'
     )
-     # print(f"Driver Created")
-    return user
+    print(f"Restaurant Owner {user} Created.")
+    assert user
 
-@pytest.fixture
-def restaurant(db,restaurant_owner):
+@pytest.mark.django_db
+def test_restaurant(db,user):
     restaurant = Restaurant.objects.create(
-        owner=restaurant_owner,
+        owner_id=user,
         name='Test Restaurant',
         description='testing food',
         cuisine_type='indian',
@@ -72,36 +73,20 @@ def restaurant(db,restaurant_owner):
         delivery_fee=30.00,
         minimum_order=100,
     )
-     # print(f"Restaurant {restaurant} Created")
-    return restaurant
+    print(f"Restaurant {restaurant} Created.")
+    assert restaurant
 
-@pytest.fixture
-def menu_items(db,restaurant):
-    item1 = MenuItem.objects.create(
+@pytest.mark.django_db
+def test_menu_items(db,restaurant):
+    item = MenuItem.objects.create(
         restaurant=restaurant,
-        name='Paneer Butter Masala',
-        description='paneer',
-        price=Decimal('250.00'),
-        category='m',
-        dietary_info='v1',
+        name='Cheeze Paneer',
+        description='paneer with delicious cheeze',
+        price=250.00,
+        category='main_course',
+        dietary_info='vegetarian',
         is_available=True,
+        preparation_time=5,
     )
-    item2 = MenuItem.objects.create(
-        restaurant=restaurant,
-        name='Dal Tadka',
-        description='dal with tadka',
-        price=Decimal('150.00'),
-        category='m',
-        dietary_info='v1',
-        is_available=True,
-    )
-    item3 = MenuItem.objects.create(
-        restaurant=restaurant,
-        name='Gulab Jamun',
-        description='dessert',
-        price=Decimal('80.00'),
-        category='d',
-        dietary_info='no',
-        is_available=False,
-    )
-    return [item1,item2,item3]
+    print(f"Menu Item {item} Created.")
+    assert item
