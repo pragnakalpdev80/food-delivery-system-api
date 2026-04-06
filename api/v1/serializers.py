@@ -264,7 +264,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             estimated_delivery_time=datetime.datetime.now() + datetime.timedelta(seconds=30*60)
             **validated_data
         )
-        print(order)
+        # print(order)
 
         for cart_item in cart.cart_items.select_related('menu_item').all():
             OrderItem.objects.create(

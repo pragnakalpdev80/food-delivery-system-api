@@ -12,7 +12,7 @@ class OrderConsumer(AsyncWebsocketConsumer):
         print(f"Connection from: {self.scope['client']}")
         print(f"Path: {self.scope['path']}")
         print(f"User: {self.scope['user']}")
-        
+        print(f"User: {self.scope['user'].user_type}")
         user = self.scope['user']
 
         self.order_id = self.scope["url_route"]["kwargs"]["order_number"]
@@ -28,9 +28,10 @@ class OrderConsumer(AsyncWebsocketConsumer):
         }))
         
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,self.channel_name
-        )
+        try:
+            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        except AttributeError:
+            None
 
     async def receive(self,text_data):
         text_data_json = json.loads(text_data)
@@ -71,6 +72,11 @@ class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
         if isinstance(self.scope['user'], AnonymousUser):
             await self.close()
             return
+        
+        if not self.scope['user'].user_type == 'restaurant_owner':
+            await self.close()
+            return
+
         self.restaurant_id = self.scope["url_route"]["kwargs"]["restaurant_id"]
         self.room_group_name = f"restaurant_{self.restaurant_id}"
 
@@ -84,10 +90,13 @@ class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        try:
+            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        except AttributeError:
+            None
 
-    async def receive(self, text_data):
-        pass
+    # async def receive(self, text_data):
+    #     pass
 
     async def new_order(self, event):
         await self.send(text_data=json.dumps({
@@ -111,6 +120,11 @@ class CustomerDashboardConsumer(AsyncWebsocketConsumer):
         if isinstance(self.scope['user'], AnonymousUser):
             await self.close()
             return
+        
+        if not self.scope['user'].user_type == 'customer':
+            await self.close()
+            return
+
         self.customer_id = self.scope["url_route"]["kwargs"]["customer_id"]
         self.room_group_name = f"customer_{self.customer_id}"
 
@@ -124,7 +138,10 @@ class CustomerDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        try:
+            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        except AttributeError:
+            None
 
     async def receive(self, text_data):
         pass
@@ -138,7 +155,6 @@ class CustomerDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def order_status_update(self, event):
-        print(event)
         await self.send(text_data=json.dumps({
             'type': 'order_status_update',
             'status': event['status'],
@@ -152,9 +168,13 @@ class DriverDashboardConsumer(AsyncWebsocketConsumer):
         if isinstance(self.scope['user'], AnonymousUser):
             await self.close()
             return
+        
+        if not self.scope['user'].user_type == 'delivery_driver':
+            await self.close()
+            return
+        
         self.driver_id = self.scope["url_route"]["kwargs"]["driver_id"]
         self.room_group_name = f"driver_{self.driver_id}"
-        print(self.room_group_name)
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
@@ -165,7 +185,10 @@ class DriverDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        try:
+            await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        except AttributeError:
+            None
 
     async def receive(self, text_data):
         pass
