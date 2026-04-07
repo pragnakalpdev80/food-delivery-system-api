@@ -1,6 +1,10 @@
 from django.test import TestCase
 import pytest
-from api.models import *
+from api.models import (
+    User, CustomerProfile, DriverProfile, 
+    Restaurant, Address, MenuItem, Cart, 
+    CartItem, Order, OrderItem, Review
+)
 from rest_framework.test import APIClient
 
 @pytest.fixture

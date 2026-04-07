@@ -1,5 +1,10 @@
 from django.urls import re_path,path
-from .consumers import *
+from .consumers import (
+    RestaurantDashboardConsumer,
+    OrderConsumer,
+    CustomerDashboardConsumer,
+    DriverDashboardConsumer
+)
 """
 Websocket URL routes to connect with the websocket for communication.
 """
