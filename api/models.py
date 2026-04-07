@@ -45,6 +45,7 @@ class Address(TimestampedModel, SoftDeleteModel):
     user = models.ForeignKey(User,on_delete=models.CASCADE)
 
     def save(self,*args,**kwargs):
+        """ If user creates a new default address then rest of user's address will be removed from the default address. """
         if self.is_default:
             user_address = Address.objects.filter(user=self.user)
             user_address.update(is_default=False)
@@ -65,7 +66,7 @@ class CustomerProfile(TimestampedModel, SoftDeleteModel):
 
     @property
     def default_address(self):
-        user_default_adress = Address.objects.get(user=self.user, is_default=True)
+        user_default_adress = Address.objects.filter(user=self.user, is_default=True).first()
         return user_default_adress
 
     @property
@@ -74,7 +75,7 @@ class CustomerProfile(TimestampedModel, SoftDeleteModel):
         return user_saved_addresses
     
     def __str__(self):
-       return "{}".format(self.user)
+       return f"{self.user}"
 
 
 class DriverProfile(TimestampedModel, SoftDeleteModel):
@@ -112,7 +113,7 @@ class Restaurant(TimestampedModel, SoftDeleteModel):
         ("italian","Italian"), ("chinese","Chinese"), ("indian","Indian"), ("mexican","Mexican"), 
         ("american","American"), ("japanese","Japanese"), ("thai","Thai"), ("mediterranean","Mediterranean")
     )
-    owner = models.OneToOneField(User,on_delete=models.CASCADE)
+    owner = models.OneToOneField(User,on_delete=models.CASCADE, related_name="restaurant")
     name = models.CharField(max_length=50)
     description = models.TextField()
     cuisine_type = models.CharField(choices=CUISINE_CHOICES)
@@ -133,10 +134,12 @@ class Restaurant(TimestampedModel, SoftDeleteModel):
        return "{}".format(self.name)
     
     def is_currently_open(self):
+        """ Method to check restaurant is currently open or not. """
         current_time = timezone.localtime(timezone.now()).time()
         return self.opening_time <= current_time <= self.closing_time
 
     def update_average_rating(self):
+        """ Method to update the average rating of restaurant. """
         result = self.review_set.aggregate(avg=Avg('rating'), count=Count('id'))
         self.average_rating = round(result['avg'])
         self.total_reviews = result['count']
@@ -170,6 +173,7 @@ class MenuItem(TimestampedModel,SoftDeleteModel):
 
 
 class Cart(TimestampedModel):
+    """ Cart Model """
     customer = models.OneToOneField(CustomerProfile, on_delete=models.CASCADE, related_name="cart")
     restaurant = models.ForeignKey(Restaurant,on_delete=models.CASCADE,related_name="carts",null=True,blank=True,db_index=True)
         
@@ -177,16 +181,19 @@ class Cart(TimestampedModel):
         return f"{self.customer} : {self.restaurant}"
     
     def get_total(self):
+        """ method to get total amount of the cart. """
         total = sum(item.get_subtotal() for item in self.cart_items.all())
         return total
     
 class CartItem(TimestampedModel):
+    """ Cart Items Model """
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_items')
     menu_item = models.ForeignKey(MenuItem,on_delete=models.CASCADE,related_name='added_item')
     quantity = models.PositiveIntegerField()
     special_instructions = models.TextField(null=True)
 
     def get_subtotal(self):
+        """ Method to get subtotal of cart items. """
         return self.menu_item.price * self.quantity
    
     def __str__(self):
@@ -218,12 +225,15 @@ class Order(TimestampedModel):
        return f"{self.order_number}"
     
     def calculate_total(self):
+        """ Method to calculate total amount of the cart. """
         return self.subtotal+self.delivery_fee+self.tax
     
     def can_cancel(self):
+        """ Method to check order is cancallable or not. """
         return self.status in ['pending', 'confirmed']
            
     def is_delivered(self):
+        """ Method to check the order is delivered or not. """
         return self.status == 'delivered'
 
 

@@ -5,14 +5,16 @@ from django.contrib.auth.models import AnonymousUser
 
 
 class OrderConsumer(AsyncWebsocketConsumer):
+    """ Orders notification consumer """
     async def connect(self):
+        """ connects to the order dashboard """
         if isinstance(self.scope['user'], AnonymousUser):
             await self.close()
             return
-         # print(f"Connection from: {self.scope['client']}")
-         # print(f"Path: {self.scope['path']}")
-         # print(f"User: {self.scope['user']}")
-         # print(f"User: {self.scope['user'].user_type}")
+        # print(f"Connection from: {self.scope['client']}")
+        # print(f"Path: {self.scope['path']}")
+        # print(f"User: {self.scope['user']}")
+        # print(f"User: {self.scope['user'].user_type}")
         user = self.scope['user']
 
         self.order_id = self.scope["url_route"]["kwargs"]["order_number"]
@@ -28,6 +30,7 @@ class OrderConsumer(AsyncWebsocketConsumer):
         }))
         
     async def disconnect(self, close_code):
+        """ disconnects from the order dashboard """
         try:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         except AttributeError:
@@ -68,7 +71,9 @@ class OrderConsumer(AsyncWebsocketConsumer):
 
 
 class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
+    """ Restaurants notification consumer """
     async def connect(self):
+        """ connects to the restaurant dashboard """
         if isinstance(self.scope['user'], AnonymousUser):
             await self.close()
             return
@@ -76,6 +81,11 @@ class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
         if not self.scope['user'].user_type == 'restaurant_owner':
             await self.close()
             return
+        
+        # if not self.scope['user'].id == self.scope["url_route"]["kwargs"]["restaurant_id"]:
+        #     print(self.scope['user'].customer_profile)
+        #     await self.close()
+        #     return
 
         self.restaurant_id = self.scope["url_route"]["kwargs"]["restaurant_id"]
         self.room_group_name = f"restaurant_{self.restaurant_id}"
@@ -90,6 +100,7 @@ class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
+        """ disconnects from the restaurant dashboard """
         try:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         except AttributeError:
@@ -116,7 +127,9 @@ class RestaurantDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
 class CustomerDashboardConsumer(AsyncWebsocketConsumer):
+    """ Customers notification consumer """
     async def connect(self):
+        """ connects to the customer dashboard """
         if isinstance(self.scope['user'], AnonymousUser):
             await self.close()
             return
@@ -138,6 +151,7 @@ class CustomerDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
+        """ disconnects from the customer dashboard """
         try:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         except AttributeError:
@@ -163,8 +177,9 @@ class CustomerDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
 class DriverDashboardConsumer(AsyncWebsocketConsumer):
-    
+    """ Drivers notification consumer """
     async def connect(self):
+        """ connects to the driver dashboard """
         if isinstance(self.scope['user'], AnonymousUser):
             await self.close()
             return
@@ -185,6 +200,7 @@ class DriverDashboardConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
+        """ disconnects from the customer dashboard """
         try:
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
         except AttributeError:
@@ -194,6 +210,7 @@ class DriverDashboardConsumer(AsyncWebsocketConsumer):
         pass
 
     async def assigned_order(self, event):
+
         await self.send(text_data=json.dumps({
             'type': 'assigned_order',
             'order_id': event['order_id'],

@@ -10,7 +10,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 from rest_framework.response import Response
 from rest_framework import viewsets, status, generics, filters
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -30,9 +30,10 @@ logger = logging.getLogger(__name__)
         tags=["Userbase"],
     ))
 class UserRegistrationView(generics.CreateAPIView):
+    """ User registration view to create/update and delete new user. """
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
-    permission_classes = []
+    permission_classes = [AllowAny]
  
     @extend_schema(
         summary="Create a new user",
@@ -41,6 +42,9 @@ class UserRegistrationView(generics.CreateAPIView):
         responses={201: UserRegistrationSerializer},
     )
     def create(self, request, *args, **kwargs):
+        """
+        Create method to create user and it will return user's data and refresh and access token.
+        """
         serializer = self.get_serializer(data=request.data)   
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
@@ -59,42 +63,61 @@ class UserRegistrationView(generics.CreateAPIView):
         tags=["Customers"],
     ))
 class CustomerViewSet(viewsets.ModelViewSet):
+    """
+    Customer Viewset to manage customer profile.
+    """
     permission_classes = [IsAuthenticated,IsCustomer]
     serializer_class = CustomerProfileSerializer
     def get_queryset(self):
+        """ Queryset to get customer can only access own profile. """
+        if not self.request.user.is_authenticated:
+            return CustomerProfile.objects.none()
         return CustomerProfile.objects.filter(user=self.request.user)
 
 @extend_schema_view(
     post=extend_schema(
         summary="Customer Address",
         description=" Endpoint for customers' address customers can add, update and delete addresses.",
-        tags=["Userbase"],
+        tags=["Customers Addresses"],
     ))
 class AddressViewSet(viewsets.ModelViewSet):
+    """
+    Customer Viewset to manage customer addresses.
+    """
     permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = AddressSerializer
 
     def get_queryset(self):
+        """ Only customers can manage own addresses only"""
+        if not self.request.user.is_authenticated:
+            return Address.objects.none()
         return Address.objects.filter(user = self.request.user,is_deleted=False)
     
     def perform_destroy(self, instance):
+        """ Method to soft delete the address. """
         instance.is_deleted = True
         instance.save()
 
 @extend_schema_view()
 class DriverViewSet(viewsets.ModelViewSet):
+    """ Driver ViewSet to manage driver's profile. """
     permission_classes = [IsAuthenticated, IsDriver]
     serializer_class = DriverProfileSerializer
 
     def get_queryset(self):
+        """ Queryset to get drivers can only access own profile. """
+        if not self.request.user.is_authenticated:
+            return DriverProfile.objects.none()
         return DriverProfile.objects.filter(user=self.request.user,is_deleted=False)
 
     def perform_destroy(self, instance):
+        """ Method to soft delete the driver profile. """
         instance.is_deleted = True
         instance.save()
 
 
 class RestaurantViewSet(viewsets.ModelViewSet):
+    """ Driver ViewSet to manage restaurants. """
     permission_classes = [IsAuthenticated, IsRestaurantOwner, IsOwnerOrReadOnly]
     pagination_class = RestaurantPageNumberPagination
     queryset = Restaurant.objects.filter(is_deleted=False)
@@ -106,21 +129,30 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_permissions(self):
+        """
+        Only restaurant owner can create, update and delete others can only see the details.
+        """
         if self.action in ['list', 'retrieve', 'menu', 'popular']:
             return [IsAuthenticated()]
         return [IsAuthenticated(), IsRestaurantOwner(), IsOwnerOrReadOnly()]
 
     def get_serializer_class(self):
+        """
+        When user searches for specific request then it will show the restaurant with menu items
+        and for other methods it will show only restaurant details only.
+        """
         if self.action == 'retrieve':
             return RestaurantDetailSerializer
         return RestaurantSerializer
 
     def perform_destroy(self, instance):
+        """ Method to soft delete the restaurant. """
         instance.is_deleted = True
         instance.save()
 
     @method_decorator(cache_page(60 * 5), name='list_restaurant')
     def list(self, request, *args, **kwargs):
+        """ Overriden list method to get pagination on restaurants and added 5 minutes. """
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
@@ -133,11 +165,13 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     
     @method_decorator(cache_page(60 * 10), name='get_restaurant')
     def retrieve(self, request, *args, **kwargs):
+        """ Added cache of 10 minutes on restaurant details method. """
         return super().retrieve(request, *args, **kwargs)
     
     @method_decorator(cache_page(60 * 15), name='restaurant_menu')
     @action(detail=True, methods=['get'], url_path='menu')
     def menu(self, request,  *args, **kwargs):
+        """ Created a custom menu method to get menu of the restaurant with 15 minutes of cache. """
         restaurant = self.get_object()
         items = MenuItem.objects.filter(restaurant_id=restaurant.id, is_available=True)
           # print(items)
@@ -147,12 +181,14 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     @method_decorator(cache_page(60 * 30), name='popular_restaurant')
     @action(detail=False, methods=['get'], url_path='popular')
     def popular(self, request,  *args, **kwargs):
+        """ Created a custom method to get popular restaurants and added 30 minutes of cache on the method. """
         popular = Restaurant.objects.filter(is_open=True).order_by('-average_rating')
         serializer = RestaurantSerializer(popular, many=True, context={'request': request})
         return Response(serializer.data,status=status.HTTP_200_OK)
     
 
 class MenuItemViewSet(viewsets.ModelViewSet):
+    """ Menu items ViewSet to manage the menu items of restaurant. """
     pagination_class =MenuItemPageNumberPagination
     # queryset = MenuItem.objects.all()
     serializer_class = MenuItemSerializer
@@ -163,30 +199,48 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_permissions(self):
+        """
+        Permissions for authenticated users can see restaurants menu items and only restaurant owners can access all routes.
+        """
         if self.action in ['list', 'retrieve']:
             return [IsAuthenticated()]
         return [IsAuthenticated(), IsRestaurantOwner(), IsOwnerOrReadOnly()]
 
     def get_queryset(self):
+        """
+        Owners can create, update and delete own restaurants items.
+        """
+        if not self.request.user.is_authenticated:
+            return MenuItem.objects.none()
         user = self.request.user
         if user.user_type == 'restaurant_owner':
             return MenuItem.objects.filter(restaurant__owner=user,is_deleted=False).select_related('restaurant')
         return MenuItem.objects.filter(is_available=True,is_deleted=False).select_related('restaurant')
 
     def perform_destroy(self, instance):
+        """ Method to soft delete the menu items. """
         instance.is_deleted = True
         instance.save()
 
 
 class CartViewSet(viewsets.ModelViewSet):
+    """ Cart ViewSet to manage the cart of customers. """
     permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = CartSerializer
 
     def get_queryset(self):
+        """
+        Customers can only access their own cart only.
+        """
+        if not self.request.user.is_authenticated:
+            return Cart.objects.none()
         return Cart.objects.prefetch_related('cart_items', 'cart_items__menu_item').filter(customer=self.request.user.customer_profile)
 
     @action(detail=False, methods=['delete'], url_path='clear')
     def clear(self, request):
+        """
+        Method to remove all cart items from the cart.
+        """
         try:
             cart = request.user.customer_profile.cart
             cart.cart_items.all().delete()
@@ -197,24 +251,36 @@ class CartViewSet(viewsets.ModelViewSet):
         return Response({'success': 'Cart cleared.'},status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
+        """ Cart creation endpoint is bloacked beacause when a customer will register then customer's cart will be created automatically and every customer can have only one cart."""
         return Response({'error':'User can only have one cart'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
     def update(self, request, *args, **kwargs):
+        """ We are allowing only partial update instead of whole update."""
         return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def destroy(self, request, *args, **kwargs):
+        """ Customers cannot delete their cart instead of delete you can use clear cart method. """
+        return Response({'error':'You cannot delete your cart.'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class CartItemViewSet(viewsets.ModelViewSet):
+    """ Cart ViewSet to manage the cart of customers. """
     permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = CartItemSerializer
 
     def get_queryset(self):
+        """ customers can only acccess their own cart items only. """
+        if not self.request.user.is_authenticated:
+            return CartItem.objects.none()
         return CartItem.objects.filter(cart__customer=self.request.user.customer_profile).select_related('menu_item')
     
     def update(self, request, *args, **kwargs):
+        """ We are allowing only partial update instead of whole update."""
         return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class OrderViewSet(viewsets.ModelViewSet):
+    """ Order ViewSet to manage the order of customers. """
     permission_classes = [IsAuthenticated]
     pagination_class =OrderCursorPagination
     filterset_class = OrderFilter
@@ -224,14 +290,34 @@ class OrderViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
 
     def get_serializer_class(self):
+        """ Different serializers for different method as per required fields. """
         if self.action in ['retrieve']:
             return OrderDetailSerializer
         if self.action == 'place':
             return OrderCreateSerializer
         return OrderSerializer
+    
+    def get_permissions(self):
+        """
+        Permissions for different actions.
+        """
+        if self.action in ['place', 'cancel']:
+            return [IsAuthenticated(), IsCustomer()]
+        if self.action in ['assign-driver', 'cancel']:
+            return [IsAuthenticated(), IsRestaurantOwner(), IsOwnerOrReadOnly()]
+        if self.action in ['update-status']:
+            return [IsAuthenticated(), IsRestaurantOwner(), IsOwnerOrReadOnly()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
+        """
+        Customers can see thier own orders.
+        Restaurant owners can see restaurants orders only.
+        delivery drivers can see assigned orders only.
+        """
         user = self.request.user
+        if not self.request.user.is_authenticated:
+            return Order.objects.none()
         qs = Order.objects.select_related('customer', 'restaurant', 'driver').prefetch_related('menu_item')
         if user.user_type == 'customer':
             return qs.filter(customer__user=user)
@@ -242,6 +328,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['post'], url_path='place', throttle_classes=[OrderCreateThrottle])
     def place(self, request, *args, **kwargs):
+        """
+        Custom method to place the order
+        """
         if request.user.user_type != 'customer':
             return Response({'message': 'Only customers can place orders.'}, status=status.HTTP_403_FORBIDDEN)
         serializer = self.get_serializer(data=request.data, context={'request': request})
@@ -262,6 +351,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='cancel')
     def cancel(self, request,  *args, **kwargs):
+        """
+        Custom method to cancel the order.
+        """
         order = self.get_object()
         user_type = request.user.user_type
          # print(user_type)
@@ -299,7 +391,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
         async_to_sync(channel_layer.group_send)(
-            f"customer_{order.customer}",
+            f"customer_{order.customer.id}",
             {
                 "type": "order_status_update",
                 "order_id": str(order.order_number),
@@ -312,6 +404,9 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='update-status')
     def update_status(self, request,  *args, **kwargs):
+        """
+        Custom method to update the order status
+        """
         if request.user.user_type == 'customer':
             return Response({'message': 'Only Restaurants and Driver can update order status.'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -400,12 +495,17 @@ class OrderViewSet(viewsets.ModelViewSet):
     # doubt maybe wrong logic
     @action(detail=True, methods=['post'], url_path='assign-driver')
     def assign_driver(self, request,  *args, **kwargs):
+        """
+        Custom method to assign the driver to order.
+        """
         order = self.get_object()
         if order.driver:
             return Response({'error': f'Driver is assigned. You cannot assign driver again'},status=status.HTTP_400_BAD_REQUEST)
     
         try:
             driver = DriverProfile.objects.filter(is_available=True).first()
+            if not driver:
+                return Response({'detail': 'No available driver found.'}, status=status.HTTP_404_NOT_FOUND)
         except DriverProfile.DoesNotExist:
             return Response({'detail': 'Driver not found.'}, status=status.HTTP_404_NOT_FOUND)
         order.driver = driver
@@ -436,18 +536,32 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response({'detail': f'Driver assigned successfully.'},status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
+        """
+        Create method is blocked because we are allowing to order from the cart only.
+        """
         return Response({'error':'You cannot create orders directly use place method to create orders'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
  
     def destroy(self, request, *args, **kwargs):
+        """
+        Delete method is blocked because we are not allowing to delete orders.
+        """
         return Response({'error':'You cannot delete orders'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
 
 class OrderItemViewSet(viewsets.ModelViewSet):
+    """ Order items ViewSet to see the order items of customers. """
     permission_classes = [IsAuthenticated]
     serializer_class = OrderItemSerializer
 
     def get_queryset(self):
+        """
+        Customers can see thier own order's items only.
+        Restaurant owners can see restaurants order's items only.
+        delivery drivers can see assigned order's items only.
+        """
         user = self.request.user
+        if not self.request.user.is_authenticated:
+            return OrderItem.objects.none()
         if user.user_type == 'customer':
             return OrderItem.objects.filter(order__customer__user=user)
         elif user.user_type == 'restaurant_owner':
@@ -457,16 +571,33 @@ class OrderItemViewSet(viewsets.ModelViewSet):
         return OrderItem.objects.none()
 
     def create(self, request, *args, **kwargs):
+        """
+        User cannot add items only via cart users can create.
+        """
         return Response({'error':'Please order via Cart'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
     def update(self, request, *args, **kwargs):
-        return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        """
+        User cannot update the order items.
+        """
+        return Response({'error':'You cannot update order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
+    def partial_update(self, request, *args, **kwargs):
+        """
+        User cannot update the order items.
+        """
+        return Response({'error':'You cannot update order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
     def destroy(self, request, *args, **kwargs):
+        """
+        User cannot delete the order items.
+        """
         return Response({'error':'You cannot delete order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
+    """ Reveiw ViewSet to manage to reviews. """
+    permission_classes = [IsAuthenticated]
     permission_classes = [IsAuthenticated]
     pagination_class = ReviewLimitOffsetPagination
     queryset = Review.objects.all()
@@ -475,13 +606,27 @@ class ReviewViewSet(viewsets.ModelViewSet):
     filterset_class = ReviewFilter
     ordering_fields = ['rating',]
     ordering = ['-created_at']
+    throttle_classes = [ReviewCreateThrottle]
 
     def perform_create(self, serializer):
+        """ Customer can only review their own orders only. """
         customer_profile = self.request.user.customer_profile
         serializer.save(customer=customer_profile)
 
     def update(self, request, *args, **kwargs):
+        """
+        User cannot update reviews.
+        """
         return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
+    def partial_update(self, request, *args, **kwargs):
+        """
+        User cannot update reviews.
+        """
+        return Response({'error':'You cannot update order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    
     def destroy(self, request, *args, **kwargs):
+        """
+        User cannot delete reveiws.
+        """
         return Response({'error':'You cannot delete reviews'},status=status.HTTP_405_METHOD_NOT_ALLOWED)

@@ -4,6 +4,7 @@ from api.models import *
 from api.validators import *
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
+    """ User registration serializer with required fields """
     password = serializers.CharField(write_only=True, min_length=8, style={'input_type': 'password'})
     confirm_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
@@ -24,6 +25,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
+    """ Customer profile serializer with required fields """
     avatar = serializers.ImageField(validators=[validate_image_format, validate_image_size_5mb], required=False)  
     default_address = serializers.SerializerMethodField()
 
@@ -41,6 +43,7 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
     
     
 class AddressSerializer(serializers.ModelSerializer):
+    """ Customer's address serializer with required fields """
     class Meta:
         model = Address
         fields = ['id','address_name', 'address', 'is_default', 'user']
@@ -53,20 +56,22 @@ class AddressSerializer(serializers.ModelSerializer):
    
 
 class DriverProfileSerializer(serializers.ModelSerializer):
+    """ Driver profile serializer with required fields """
     avatar = serializers.ImageField(validators=[validate_image_format, validate_image_size_5mb], required=False)   
     delivery_stats = serializers.SerializerMethodField()
 
     class Meta:
         model = DriverProfile
-        fields = ['user', 'avatar', 'vehicle_type', 'vehicle_number',
-                  'license_number', 'is_available', 'total_deliveries', 'average_rating']
-        read_only_fields = ['user', 'total_deliveries', 'average_rating','delivery_stats']  
+        fields = ['user', 'avatar', 'vehicle_type', 'vehicle_number', 'delivery_stats',
+                  'license_number', 'is_available',]
+        read_only_fields = ['user', 'delivery_stats']  
 
     def get_delivery_stats(self, obj):
         return obj.get_delivery_stats()
     
     
 class RestaurantSerializer(serializers.ModelSerializer):
+    """ Restaurant serializer with required fields """
     logo = serializers.ImageField(validators=[validate_image_format, validate_image_size_5mb], required=False)    
     banner = serializers.ImageField(validators=[validate_image_format, validate_image_size_10mb], required=False)  
     delivery_fee = serializers.DecimalField(max_digits=10, decimal_places=2, validators=[validate_amount])
@@ -87,6 +92,7 @@ class RestaurantSerializer(serializers.ModelSerializer):
 
 
 class RestaurantDetailSerializer(serializers.ModelSerializer):
+    """ Restaurant serializer with menu items of restaurants """
     menu_items = serializers.SerializerMethodField()   
     # reviews = serializers.SerializerMethodField()        
     is_open_now = serializers.SerializerMethodField()            
@@ -100,19 +106,23 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ['average_rating', 'total_reviews', 'owner']
 
     def get_is_open_now(self, obj):
+        """ method to check restaurant is open or not """
          # print(obj)
         return obj.is_currently_open()
     
     def get_menu_items(self, obj):
+        """ method to get menu items of restaurant """
         items = obj.menu_items.filter(is_available=True)
         return MenuItemSerializer(items, many=True).data
 
     def get_reviews(self, obj):
+        """ method to get reviews of restaurant """
         reviews = obj.reviews.all().order_by('-created_at')
         return ReviewSerializer(reviews, many=True).data
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
+    """ Menu items serializer with required fields """
     image = serializers.ImageField(validators=[validate_image_format, validate_image_size_5mb], required=False) 
     price = serializers.DecimalField(max_digits=10, decimal_places=2, validators=[validate_amount])
 
@@ -123,6 +133,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['restaurant','id']
 
     def create(self, validated_data):
+        """ overridden create method to directly add restaurant owner """
         request = self.context.get('request')
         restaurant = Restaurant.objects.get(owner = request.user)
         validated_data['restaurant'] = restaurant
@@ -130,17 +141,22 @@ class MenuItemSerializer(serializers.ModelSerializer):
 
 
 class ReviewSerializer(serializers.ModelSerializer):
+    """ Review serializer with required fields """
     class Meta:
         model = Review
         fields = ['id', 'customer', 'restaurant', 'menu_item', 'order', 'rating', 'comment']  
         read_only_fields = ['id', 'customer']
 
     def validate_rating(self,value):
+        """ rating validation method """
         if value < 1 or value > 5:
             raise serializers.ValidationError("rating should be between 1 and 5")
         return value
     
     def validate(self,data):
+        """ 
+        This method validates that only order customer can review the delivered order. 
+        """
         request = self.context['request']
         order = data.get('order')
         if order.status != 'delivered':
@@ -153,6 +169,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
+    """ Cart items serializer with required fields """
     menu_item_name = serializers.CharField(source='menu_item.name', read_only=True)
     menu_item_price = serializers.DecimalField(source='menu_item.price', max_digits=8, decimal_places=2, read_only=True)
     subtotal = serializers.SerializerMethodField()
@@ -163,9 +180,13 @@ class CartItemSerializer(serializers.ModelSerializer):
                   'quantity', 'special_instructions', 'subtotal']
 
     def get_subtotal(self, obj):
+        """ method to get subtotal of cart items. """
         return obj.get_subtotal()
 
     def validate_menu_item(self, value):
+        """ 
+        Validates the menu items that customer can only add the items from single restaurant only.
+        """
         request = self.context.get('request')
         try:
             cart = Cart.objects.get(customer=request.user.customer_profile)
@@ -186,12 +207,16 @@ class CartItemSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
+        """
+        overridden the create method to directly customer can add items without providing his/her own foreign key.
+        """
         request = self.context.get('request')
         cart = Cart.objects.get(customer=request.user.customer_profile)
         validated_data['cart'] = cart
         return CartItem.objects.create(**validated_data)
 
 class CartSerializer(serializers.ModelSerializer):
+    """ Cart serializer with required fields """
     cart_items = CartItemSerializer(many=True, read_only=True)
     total = serializers.SerializerMethodField()
     item_count = serializers.SerializerMethodField()
@@ -203,24 +228,31 @@ class CartSerializer(serializers.ModelSerializer):
         read_only_fields = ['customer', 'restaurant']
 
     def get_total(self, obj):
+        """ method to count total amount of cart items. """
         return obj.get_total()
 
     def get_item_count(self, obj):
+        """ method to get items count of cart items. """
         return obj.cart_items.count()
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    """ order item serializer with required fields """
     class Meta:
         model = OrderItem
         fields = ['id', 'order', 'menu_item', 'quantity', 'price', 'special_instructions']   
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
+    """ Order creation serializer with required fields """
     class Meta:
         model = Order
         fields = ['delivery_address', 'special_instructions']
 
     def validate(self, data):
+        """ 
+        Order validation method : This method validates customer's address
+        """
         request = self.context.get('request')
         address = data.get('delivery_address')
         if address and address.user != request.user:
@@ -243,6 +275,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         return data
     
     def create(self, validated_data):
+        """ Overrideen create method to add total amount and delivery time of the order with order details. """
         cart = validated_data.pop('cart')
         request = self.context.get('request')
         customer_profile = request.user.customer_profile
@@ -283,6 +316,7 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         return order
 
 class OrderSerializer(serializers.ModelSerializer):
+    """ Order serializer with required fields """
     # delivery_address = serializers.CharField(source='delivery_address.address', read_only=True)
 
     class Meta:
@@ -296,6 +330,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
+    """ Order detail serializer with order items and order status. """
     restaurant = RestaurantSerializer(read_only=True)
     menu_item = OrderItemSerializer(read_only=True, many=True)  
     can_cancel = serializers.SerializerMethodField()         
@@ -311,7 +346,9 @@ class OrderDetailSerializer(serializers.ModelSerializer):
                             'tax', 'total_amount', 'estimated_delivery_time', 'actual_delivery_time']
 
     def get_can_cancel(self, obj):
+        """ Method to get order is cancallable or not. """
         return obj.can_cancel()
 
     def get_is_delivered(self, obj):
+        """ Method to get the order is delivered or not. """
         return obj.is_delivered() 

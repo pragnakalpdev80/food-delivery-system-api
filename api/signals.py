@@ -26,11 +26,14 @@ def update_rating_on_review_save(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=CustomerProfile)
 def create_cart_on_customer_creation(sender, instance, created, **kwargs):
+    """
+    To create cart of customer automatically
+    """
     if created:
         Cart.objects.create(customer=instance)
-
+    
 @receiver(post_save, sender=Order)
-def create_cart(sender, instance, created, **kwargs):
+def order_notification_to_restaurant(sender, instance, created, **kwargs):
     if created:
          # print("Hello")
          # print(instance.restaurant.id)
@@ -49,7 +52,7 @@ def update_stats_on_delivery(sender, instance, created, **kwargs):
     if not created and instance.status == 'delivered':
         customer = instance.customer
         customer.total_orders += 1
-        customer.loyalty_points += 10
+        customer.loyalty_points += 1
         customer.save(update_fields=['total_orders', 'loyalty_points', 'updated_at'])
         
         if instance.driver:
