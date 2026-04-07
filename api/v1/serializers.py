@@ -1,7 +1,16 @@
 from rest_framework import serializers
 from datetime import datetime, timedelta
-from api.models import *
-from api.validators import *
+from api.models import (
+    User, CustomerProfile, DriverProfile, 
+    Restaurant, Address, MenuItem, Cart, 
+    CartItem, Order, OrderItem, Review
+)
+from api.validators import (
+    validate_amount,
+    validate_image_format,
+    validate_image_size_5mb,
+    validate_image_size_10mb
+)
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """ User registration serializer with required fields """

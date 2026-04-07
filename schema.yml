@@ -273,6 +273,7 @@ paths:
   /api/v1/cart/:
     get:
       operationId: v1_cart_list
+      description: Cart ViewSet to manage the cart of customers.
       parameters:
       - name: ordering
         required: false
@@ -301,6 +302,9 @@ paths:
           description: ''
     post:
       operationId: v1_cart_create
+      description: Cart creation endpoint is bloacked beacause when a customer will
+        register then customer's cart will be created automatically and every customer
+        can have only one cart.
       tags:
       - v1
       security:
@@ -315,6 +319,7 @@ paths:
   /api/v1/cart-items/:
     get:
       operationId: v1_cart_items_list
+      description: Cart ViewSet to manage the cart of customers.
       parameters:
       - name: ordering
         required: false
@@ -343,6 +348,7 @@ paths:
           description: ''
     post:
       operationId: v1_cart_items_create
+      description: Cart ViewSet to manage the cart of customers.
       tags:
       - v1
       requestBody:
@@ -369,6 +375,7 @@ paths:
   /api/v1/cart-items/{id}/:
     get:
       operationId: v1_cart_items_retrieve
+      description: Cart ViewSet to manage the cart of customers.
       parameters:
       - in: path
         name: id
@@ -389,6 +396,7 @@ paths:
           description: ''
     put:
       operationId: v1_cart_items_update
+      description: We are allowing only partial update instead of whole update.
       parameters:
       - in: path
         name: id
@@ -421,6 +429,7 @@ paths:
           description: ''
     patch:
       operationId: v1_cart_items_partial_update
+      description: Cart ViewSet to manage the cart of customers.
       parameters:
       - in: path
         name: id
@@ -452,6 +461,7 @@ paths:
           description: ''
     delete:
       operationId: v1_cart_items_destroy
+      description: Cart ViewSet to manage the cart of customers.
       parameters:
       - in: path
         name: id
@@ -469,6 +479,7 @@ paths:
   /api/v1/cart/{id}/:
     get:
       operationId: v1_cart_retrieve
+      description: Cart ViewSet to manage the cart of customers.
       parameters:
       - in: path
         name: id
@@ -489,6 +500,7 @@ paths:
           description: ''
     put:
       operationId: v1_cart_update
+      description: We are allowing only partial update instead of whole update.
       parameters:
       - in: path
         name: id
@@ -509,6 +521,7 @@ paths:
           description: ''
     patch:
       operationId: v1_cart_partial_update
+      description: Cart ViewSet to manage the cart of customers.
       parameters:
       - in: path
         name: id
@@ -529,6 +542,8 @@ paths:
           description: ''
     delete:
       operationId: v1_cart_destroy
+      description: Customers cannot delete their cart instead of delete you can use
+        clear cart method.
       parameters:
       - in: path
         name: id
@@ -546,6 +561,7 @@ paths:
   /api/v1/cart/clear/:
     delete:
       operationId: v1_cart_clear_destroy
+      description: Method to remove all cart items from the cart.
       tags:
       - v1
       security:
@@ -1088,6 +1104,7 @@ paths:
   /api/v1/orderitems/:
     get:
       operationId: v1_orderitems_list
+      description: Order items ViewSet to see the order items of customers.
       parameters:
       - name: ordering
         required: false
@@ -1116,6 +1133,7 @@ paths:
           description: ''
     post:
       operationId: v1_orderitems_create
+      description: User cannot add items only via cart users can create.
       tags:
       - v1
       requestBody:
@@ -1142,6 +1160,7 @@ paths:
   /api/v1/orderitems/{id}/:
     get:
       operationId: v1_orderitems_retrieve
+      description: Order items ViewSet to see the order items of customers.
       parameters:
       - in: path
         name: id
@@ -1162,6 +1181,7 @@ paths:
           description: ''
     put:
       operationId: v1_orderitems_update
+      description: User cannot update the order items.
       parameters:
       - in: path
         name: id
@@ -1194,6 +1214,7 @@ paths:
           description: ''
     patch:
       operationId: v1_orderitems_partial_update
+      description: User cannot update the order items.
       parameters:
       - in: path
         name: id
@@ -1225,6 +1246,7 @@ paths:
           description: ''
     delete:
       operationId: v1_orderitems_destroy
+      description: User cannot delete the order items.
       parameters:
       - in: path
         name: id
@@ -1242,6 +1264,7 @@ paths:
   /api/v1/orders/:
     get:
       operationId: v1_orders_list
+      description: Order ViewSet to manage the order of customers.
       parameters:
       - in: query
         name: created_at__gte
@@ -1303,6 +1326,8 @@ paths:
           description: ''
     post:
       operationId: v1_orders_create
+      description: Create method is blocked because we are allowing to order from
+        the cart only.
       tags:
       - v1
       requestBody:
@@ -1329,6 +1354,7 @@ paths:
   /api/v1/orders/{id}/:
     get:
       operationId: v1_orders_retrieve
+      description: Order ViewSet to manage the order of customers.
       parameters:
       - in: path
         name: id
@@ -1349,6 +1375,7 @@ paths:
           description: ''
     put:
       operationId: v1_orders_update
+      description: Order ViewSet to manage the order of customers.
       parameters:
       - in: path
         name: id
@@ -1381,6 +1408,7 @@ paths:
           description: ''
     patch:
       operationId: v1_orders_partial_update
+      description: Order ViewSet to manage the order of customers.
       parameters:
       - in: path
         name: id
@@ -1412,6 +1440,8 @@ paths:
           description: ''
     delete:
       operationId: v1_orders_destroy
+      description: Delete method is blocked because we are not allowing to delete
+        orders.
       parameters:
       - in: path
         name: id
@@ -1429,6 +1459,7 @@ paths:
   /api/v1/orders/{id}/assign-driver/:
     post:
       operationId: v1_orders_assign_driver_create
+      description: Custom method to assign the driver to order.
       parameters:
       - in: path
         name: id
@@ -1462,6 +1493,7 @@ paths:
   /api/v1/orders/{id}/cancel/:
     post:
       operationId: v1_orders_cancel_create
+      description: Custom method to cancel the order.
       parameters:
       - in: path
         name: id
@@ -1495,6 +1527,7 @@ paths:
   /api/v1/orders/{id}/update-status/:
     post:
       operationId: v1_orders_update_status_create
+      description: Custom method to update the order status
       parameters:
       - in: path
         name: id
@@ -1528,6 +1561,7 @@ paths:
   /api/v1/orders/place/:
     post:
       operationId: v1_orders_place_create
+      description: Custom method to place the order
       tags:
       - v1
       requestBody:
@@ -1802,6 +1836,7 @@ paths:
   /api/v1/reviews/:
     get:
       operationId: v1_reviews_list
+      description: Reveiw ViewSet to manage to reviews.
       parameters:
       - name: limit
         required: false
@@ -1852,6 +1887,7 @@ paths:
           description: ''
     post:
       operationId: v1_reviews_create
+      description: Reveiw ViewSet to manage to reviews.
       tags:
       - v1
       requestBody:
@@ -1878,6 +1914,7 @@ paths:
   /api/v1/reviews/{id}/:
     get:
       operationId: v1_reviews_retrieve
+      description: Reveiw ViewSet to manage to reviews.
       parameters:
       - in: path
         name: id
@@ -1898,6 +1935,7 @@ paths:
           description: ''
     put:
       operationId: v1_reviews_update
+      description: User cannot update reviews.
       parameters:
       - in: path
         name: id
@@ -1930,6 +1968,7 @@ paths:
           description: ''
     patch:
       operationId: v1_reviews_partial_update
+      description: User cannot update reviews.
       parameters:
       - in: path
         name: id
@@ -1961,6 +2000,7 @@ paths:
           description: ''
     delete:
       operationId: v1_reviews_destroy
+      description: User cannot delete reveiws.
       parameters:
       - in: path
         name: id
