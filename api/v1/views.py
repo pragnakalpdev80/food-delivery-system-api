@@ -97,14 +97,10 @@ class UserRegistrationView(generics.CreateAPIView):
 
 
 @extend_schema_view(
-    create=extend_schema(
-        summary="This method is not allowed",
-        description = "Customer profile creates automatically upon user creation",
-        tags=['Customer Profile']
-    ),
     list=extend_schema(
         summary=" Customer Profile",
         description="Customer profile",
+        request= CustomerProfileSerializer,
         responses={
             200:CustomerProfileSerializer
         },
@@ -137,7 +133,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAuthenticated,IsCustomer]
     serializer_class = CustomerProfileSerializer
-    http_method_names = ['get', 'post', 'patch','delete']
+    http_method_names = ['get', 'patch','delete']
 
     def get_queryset(self):
         """ Queryset to get customer can only access own profile. """
@@ -154,24 +150,44 @@ class CustomerViewSet(viewsets.ModelViewSet):
     create=extend_schema(
         summary="Customer Address",
         description = "Customer Address creation",
+        request= AddressSerializer,
+        responses={
+            201:AddressSerializer
+        },
         tags=['Customer Address']
     ),
     list=extend_schema(
         summary="Customer Address",
         description="Customer Addresses",
+        request= AddressSerializer,
+        responses={
+            200:AddressSerializer
+        },
         tags=["Customer Address"]),
     retrieve=extend_schema(
         summary="Customer Address",
         description="Customer Address details",
+        request= AddressSerializer,
+        responses={
+            200:AddressSerializer
+        },
         tags=["Customer Address"]),
     partial_update=extend_schema(
         summary="Update Customer Address",
         description=" Update your Address details here",
+        request= AddressSerializer,
+        responses={
+            200:AddressSerializer
+        },
         tags=['Customer Address']
     ),
     destroy=extend_schema(
         summary="Soft deletion of customer address",
         description = "We have added soft delete to delete customer address",
+        request= AddressSerializer,
+        responses={
+            204:{}
+        },
         tags=['Customer Address']
     ),
 )
@@ -195,22 +211,29 @@ class AddressViewSet(viewsets.ModelViewSet):
         instance.save()
 
 @extend_schema_view(
-    create=extend_schema(
-        summary="This method is not allowed",
-        description = "CusDrivertomer profile creates automatically upon user creation",
-        tags=['Driver Profile']
-    ),
     list=extend_schema(
         summary="Driver Profile",
         description="Driver profile",
+        request= DriverProfileSerializer,
+        responses={
+            200:DriverProfileSerializer
+        },
         tags=["Driver Profile"]),
     retrieve=extend_schema(
         summary="Driver Profile",
         description="Driver profile details",
+        request= DriverProfileSerializer,
+        responses={
+            200:DriverProfileSerializer
+        },
         tags=["Driver Profile"]),
     partial_update=extend_schema(
         summary="Update Driver Profile",
         description=" Update your profile details here",
+        request= DriverProfileSerializer,
+        responses={
+            200:DriverProfileSerializer
+        },
         tags=['Driver Profile']
     ),
     destroy=extend_schema(
@@ -223,7 +246,7 @@ class DriverViewSet(viewsets.ModelViewSet):
     """ Driver ViewSet to manage driver's profile. """
     permission_classes = [IsAuthenticated, IsDriver]
     serializer_class = DriverProfileSerializer
-    http_method_names = ['get', 'post', 'patch','delete']
+    http_method_names = ['get','patch','delete']
 
     def get_queryset(self):
         """ Queryset to get drivers can only access own profile. """
@@ -240,36 +263,63 @@ class DriverViewSet(viewsets.ModelViewSet):
     create=extend_schema(
         summary="Restaurant",
         description = "Restaurant creation",
+        request= RestaurantSerializer,
+        responses={
+            201:RestaurantSerializer
+        },
         tags=['Restaurant']
     ),
     list=extend_schema(
         summary="Restaurant",
         description="Restaurants",
-        tags=["Restaurant"]
+        tags=["Restaurant"],
+        request= RestaurantSerializer,
+        responses={
+            200:RestaurantSerializer
+        },
     ),
     retrieve=extend_schema(
         summary="Restaurant",
         description="Restaurant details",
+        request= RestaurantDetailSerializer,
+        responses={
+            200:RestaurantDetailSerializer
+        },
         tags=["Restaurant"]
     ),
     partial_update=extend_schema(
         summary="Update Restaurant Details",
         description=" Update your Restaurant details here",
+        request= RestaurantSerializer,
+        responses={
+            200:RestaurantSerializer
+        },
         tags=['Restaurant']
     ),
     destroy=extend_schema(
         summary="Restaurant",
         description = "We have added soft delete to delete Restaurant",
+        responses={
+            204:{}
+        },
         tags=['Restaurant']
     ),
     menu=extend_schema(
         summary="Restaurant",
         description = "Restaurant Menu",
+        request= MenuItemSerializer,
+        responses={
+            200:MenuItemSerializer
+        },
         tags=['Restaurant']
     ),
     popular=extend_schema(
         summary="Restaurant",
         description = "Popular Restaurants",
+        request= RestaurantSerializer,
+        responses={
+            200:RestaurantSerializer
+        },
         tags=['Restaurant']
     ),
 )
@@ -355,26 +405,45 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     create=extend_schema(
         summary="Menu Items",
         description = "Menu Items creation",
+        request= MenuItemSerializer,
+        responses={
+            201:MenuItemSerializer
+        },
         tags=['Menu Items']
     ),
     list=extend_schema(
         summary="Menu Items",
         description="Menu Item",
+        request= MenuItemSerializer,
+        responses={
+            200:MenuItemSerializer
+        },
         tags=["Menu Items"]
     ),
     retrieve=extend_schema(
         summary="Menu Items",
         description="Menu Item details",
+        request= MenuItemSerializer,
+        responses={
+            200:MenuItemSerializer
+        },
         tags=["Menu Items"]
     ),
     partial_update=extend_schema(
         summary="Update Menu Items",
         description=" Update your menu items details here",
+        request= MenuItemSerializer,
+        responses={
+            200:MenuItemSerializer
+        },
         tags=['Menu Items']
     ),
     destroy=extend_schema(
         summary="Menu Items",
         description = "We have added soft delete to delete Menu Items",
+        responses={
+            204:{}
+        },
         tags=['Menu Items']
     ),
 )
@@ -432,23 +501,33 @@ class MenuItemViewSet(viewsets.ModelViewSet):
 
 @extend_schema_view(
     list=extend_schema(
-        summary="Restaurant",
-        description="Restaurants",
+        summary="Cart",
+        description="Cart",
+        request=CartSerializer,
+        responses={200:CartSerializer},
         tags=["Cart"]
     ),
     retrieve=extend_schema(
-        summary="Cart",
-        description="Cart details",
+        summary="Cart Details",
+        description="Cart Details",
+        request=CartSerializer,
+        responses={200:CartSerializer},
         tags=["Cart"]
     ),
     destroy=extend_schema(
         summary="This method is not allowed",
         description = "Customer cannot delete cart.",
+        responses={
+            405:{}
+        },
         tags=['Cart']
     ),
     clear=extend_schema(
         summary="Clear the Cart",
         description = "Remove items from the cart.",
+        responses={
+            204:{}
+        },
         tags=['Cart']
     ),
 )
@@ -478,7 +557,7 @@ class CartViewSet(viewsets.ModelViewSet):
             cart.save(update_fields=['restaurant', 'updated_at'])
         except Cart.DoesNotExist:
             pass
-        return Response({'success': 'Cart cleared.'},status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def create(self, request, *args, **kwargs):
         """ Cart creation endpoint is bloacked beacause when a customer will register then customer's cart will be created automatically and every customer can have only one cart."""
@@ -489,26 +568,45 @@ class CartViewSet(viewsets.ModelViewSet):
     create=extend_schema(
         summary="Cart Item",
         description = "Cart Item creation",
+        request= CartItemSerializer,
+        responses={
+            201:CartItemSerializer
+        },
         tags=['Cart Item']
     ),
     list=extend_schema(
         summary="Cart Item",
         description="Cart Items",
+        request= CartItemSerializer,
+        responses={
+            200:CartItemSerializer
+        },
         tags=["Cart Item"]
     ),
     retrieve=extend_schema(
         summary="Cart Item",
         description="Cart Item details",
+        request= CartItemSerializer,
+        responses={
+            200:CartItemSerializer
+        },
         tags=["Cart Item"]
     ),
     partial_update=extend_schema(
         summary="Update Cart Item",
         description=" Update your Cart Items here.",
+        request= CartItemSerializer,
+        responses={
+            200:CartItemSerializer
+        },
         tags=['Cart Item']
     ),
     destroy=extend_schema(
         summary="Cart Item",
         description = "Remove item from the cart.",
+        responses={
+            204:{}
+        },
         tags=['Cart Item']
     ),
 )
@@ -526,39 +624,58 @@ class CartItemViewSet(viewsets.ModelViewSet):
     
 
 @extend_schema_view(
-    create=extend_schema(
-        summary="This method is not allowed",
-        description = "You can create order via place method.",
-        tags=['Order']
-    ),
     list=extend_schema(
         summary="Order",
         description="Order",
+        request=OrderSerializer,
+        responses={
+            200:OrderSerializer
+        },
         tags=["Order"]
     ),
     retrieve=extend_schema(
         summary="Order",
         description="Order details",
+        request=OrderDetailSerializer,
+        responses={
+            200:OrderDetailSerializer
+        },
         tags=["Order"]
     ),
     update_status=extend_schema(
         summary="Order Status Update",
         description = "Order Status Update.",
+        request=OrderSerializer,
+        responses={
+            200:{}
+        },
         tags=['Order']
     ),
     assign_driver=extend_schema(
         summary="Driver Assign to Order",
         description = "Assign the driver to the order.",
+        request=OrderSerializer,
+        responses={
+            200:{}
+        },
         tags=['Order']
     ),
     cancel=extend_schema(
         summary="Cancel Order",
         description = "Customer can cancel the order if it is not preapared.",
+        request=OrderSerializer,
+        responses={
+            200:{}
+        },
         tags=['Order']
     ),
     place=extend_schema(
         summary="Place Order",
         description = "Customers can place orders from here.",
+        request=OrderCreateSerializer,
+        responses={
+            200:{OrderCreateSerializer}
+        },
         tags=['Order']
     ),
 )
@@ -827,19 +944,22 @@ class OrderViewSet(viewsets.ModelViewSet):
  
  
 @extend_schema_view(
-    create=extend_schema(
-        summary="This method is not allowed",
-        description="Customer cannot create order items",
-        tags=['Order Item']
-    ),
     list=extend_schema(
         summary="Order Item",
         description="Order Items",
+        request=OrderItemSerializer,
+        responses={
+            200:{OrderItemSerializer}
+        },
         tags=["Order Item"]
     ),
     retrieve=extend_schema(
         summary="Order Item",
         description="Order Item details",
+        request=OrderItemSerializer,
+        responses={
+            200:{OrderItemSerializer}
+        },
         tags=["Order Item"]
     ),
 )
@@ -884,16 +1004,28 @@ class OrderItemViewSet(viewsets.ModelViewSet):
     create=extend_schema(
         summary="Review",
         description = "Review creation",
+        request=ReviewSerializer,
+        responses={
+            201:{ReviewSerializer}
+        },
         tags=['Review']
     ),
     list=extend_schema(
         summary="Review",
         description="Reviews",
+        request=ReviewSerializer,
+        responses={
+            200:{ReviewSerializer}
+        },
         tags=["Review"]
     ),
     retrieve=extend_schema(
         summary="Review",
         description="Review details",
+        request=ReviewSerializer,
+        responses={
+            200:{ReviewSerializer}
+        },
         tags=["Review"]
     ),
 )
