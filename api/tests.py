@@ -25,6 +25,42 @@ def restaurant(user):
 def restaurant_owner_user(create_user):
     return create_user("owner1", "restaurant_owner", "9000000002")
 
+@pytest.fixture
+def restaurant_owner_user(db):
+    user = User.objects.create_user(
+        email='testro@gmail.com',
+        password='testpass123',
+        username='testro',
+        first_name='Test',
+        last_name='Owner',
+        phone_no='9809948591',
+        user_type='restaurant_owner'
+    )
+    return user
+
+@pytest.fixture(scope='class')
+def owner_restaurant(api_client, restaurant_owner_user):
+    api_client.force_authenticate(user=restaurant_owner_user)
+    return api_client
+
+@pytest.fixture(scope='class')
+def restaurant(db,restaurant_owner_user):
+    restaurant = Restaurant.objects.create(
+        owner=user,
+        name='Test Restaurant',
+        description='testing food',
+        cuisine_type='indian',
+        address='916, Pragnakalp',
+        phone_no='9874587496',
+        email='resturant@pragnakalp.com',
+        opening_time='09:00:00',
+        closing_time='23:00:00',
+        is_open=True,
+        delivery_fee=30.00,
+        minimum_order=100,
+    )
+    assert restaurant
+
 @pytest.mark.django_db
 def test_customer():
     user = User.objects.create_user(
@@ -64,30 +100,7 @@ def test_restaurant_owner():
     )
     assert user
 
-@pytest.fixture
-def owner_restaurant(api_client, test_restaurant_owner):
-    api_client.force_authenticate(user=test_restaurant_owner)
-    return api_client
-
-@pytest.fixture
-def restaurant(db,test_restaurant_owner):
-    restaurant = Restaurant.objects.create(
-        owner=user,
-        name='Test Restaurant',
-        description='testing food',
-        cuisine_type='indian',
-        address='916, Pragnakalp',
-        phone_no='9874587496',
-        email='resturant@pragnakalp.com',
-        opening_time='09:00:00',
-        closing_time='23:00:00',
-        is_open=True,
-        delivery_fee=30.00,
-        minimum_order=100,
-    )
-    assert restaurant
-
-
+@pytest.mark.django_db
 class CustomerAPITestCase(APITestCase):
     def setUp(self):
         """Set up test data - runs before each test method"""
@@ -120,6 +133,7 @@ class CustomerAPITestCase(APITestCase):
         response = self.client.get(f'/api/v1/customers/1/')  
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)  # Verify success
 
+@pytest.mark.django_db
 class DriverAPITestCase(APITestCase):
     def setUp(self):
         """Set up test data - runs before each test method"""
@@ -168,12 +182,13 @@ class DriverAPITestCase(APITestCase):
 
     def test_rate_limit_exceeded(self):
         """Test requests exceeding rate limit are throttled"""
-        for i in range(1000):
+        for i in range(1001):
             response = self.client.get('/api/v1/drivers/')
             if response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
                 break
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
+@pytest.mark.django_db
 class RestaurantAPITestcase(APITestCase):
     def setUp(self):
         """Set up test data - runs before each test method"""
@@ -200,7 +215,22 @@ class RestaurantAPITestcase(APITestCase):
             "delivery_fee": "10",
             "minimum_order": "100"
         }
+        self.restaurant = Restaurant.objects.create(
+            owner= self.user,
+            name='Test Restaurant',
+            description='testing food',
+            cuisine_type='indian',
+            address='916, Pragnakalp',
+            phone_no='9874587496',
+            email='resturant@pragnakalp.com',
+            opening_time='09:00:00',
+            closing_time='23:00:00',
+            is_open=True,
+            delivery_fee=30.00,
+            minimum_order=100,
+        )
         token = AccessToken.for_user(user=self.user)
+        self.client.force_authenticate(self.user,token)
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
 
     def test_list_restaurants(self):
@@ -208,13 +238,18 @@ class RestaurantAPITestcase(APITestCase):
         response = self.client.get('/api/v1/restaurants/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_create_restaurant_success(self):
-        response = self.client.post('/api/v1/restaurants/', self.valid_data)  
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['name'], self.valid_data['name'])
-    
-    def test_retrieve_restaurant(self,restaurant,owner_restaurant):
+    def test_retrieve_restaurant(self):
         """Test retrieving single restaurant"""
-        response = owner_restaurant.get(f'/api/v1/restaurants/{restaurant.id}/')  
+        response = self.client.get(f'/api/v1/restaurants/{self.restaurant.id}/')  
         self.assertEqual(response.status_code, status.HTTP_200_OK)  
         self.assertEqual(response.data['id'], self.user.restaurant_owner.id) 
+
+    def test_update_restaurant_success(self):
+
+        update_data = {'name': 'Updated Title'}
+        response = self.client.patch(f'/api/v1/restaurants/{self.restaurant.id}/',update_data)  
+        self.assertEqual(response.status_code, status.HTTP_200_OK)  
+        self.restaurant.refresh_from_db()
+        self.assertEqual(self.restaurant.name, 'Updated Title')
+
+

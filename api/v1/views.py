@@ -125,11 +125,6 @@ class UserRegistrationView(generics.CreateAPIView):
         },
         tags=['Customer Profile']
     ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Please use patch method instead",
-        tags=['Customer Profile']
-    ),
     destroy=extend_schema(
         summary="Customer Profile",
         description = "We have added soft delete to delete customer profile",
@@ -142,6 +137,8 @@ class CustomerViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAuthenticated,IsCustomer]
     serializer_class = CustomerProfileSerializer
+    http_method_names = ['get', 'post', 'patch','delete']
+
     def get_queryset(self):
         """ Queryset to get customer can only access own profile. """
         if not self.request.user.is_authenticated:
@@ -172,11 +169,6 @@ class CustomerViewSet(viewsets.ModelViewSet):
         description=" Update your Address details here",
         tags=['Customer Address']
     ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Please use patch method instead",
-        tags=['Customer Address']
-    ),
     destroy=extend_schema(
         summary="Soft deletion of customer address",
         description = "We have added soft delete to delete customer address",
@@ -189,6 +181,7 @@ class AddressViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = AddressSerializer
+    http_method_names = ['get', 'post', 'patch','delete']
 
     def get_queryset(self):
         """ Only customers can manage own addresses only"""
@@ -220,11 +213,6 @@ class AddressViewSet(viewsets.ModelViewSet):
         description=" Update your profile details here",
         tags=['Driver Profile']
     ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Please use patch method instead",
-        tags=['Driver Profile']
-    ),
     destroy=extend_schema(
         summary="Driver Profile",
         description = "We have added soft delete to delete driver profile",
@@ -235,6 +223,7 @@ class DriverViewSet(viewsets.ModelViewSet):
     """ Driver ViewSet to manage driver's profile. """
     permission_classes = [IsAuthenticated, IsDriver]
     serializer_class = DriverProfileSerializer
+    http_method_names = ['get', 'post', 'patch','delete']
 
     def get_queryset(self):
         """ Queryset to get drivers can only access own profile. """
@@ -268,11 +257,6 @@ class DriverViewSet(viewsets.ModelViewSet):
         description=" Update your Restaurant details here",
         tags=['Restaurant']
     ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Please use patch method instead",
-        tags=['Restaurant']
-    ),
     destroy=extend_schema(
         summary="Restaurant",
         description = "We have added soft delete to delete Restaurant",
@@ -300,7 +284,8 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'cuisine_type', 'description']
     ordering_fields = ['-average_rating', 'delivery_fee', 'created_at',]
     ordering = ['-created_at']
-
+    http_method_names = ['get', 'post', 'patch','delete']
+    
     def get_permissions(self):
         """
         Only restaurant owner can create, update and delete others can only see the details.
@@ -364,10 +349,7 @@ class RestaurantViewSet(viewsets.ModelViewSet):
             cache.set(cache_key, cached_data, 1800)
         return Response(cached_data,status=status.HTTP_200_OK)
     
-    def update(self, request, *args, **kwargs):
-        """ We are allowing only partial update instead of whole update."""
-        return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
+    
 
 @extend_schema_view(
     create=extend_schema(
@@ -390,11 +372,6 @@ class RestaurantViewSet(viewsets.ModelViewSet):
         description=" Update your menu items details here",
         tags=['Menu Items']
     ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Please use patch method instead",
-        tags=['Menu Items']
-    ),
     destroy=extend_schema(
         summary="Menu Items",
         description = "We have added soft delete to delete Menu Items",
@@ -411,6 +388,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['price', 'name', 'created_at',]
     ordering = ['-created_at']
+    http_method_names = ['get', 'post', 'patch','delete']
 
     def get_permissions(self):
         """
@@ -436,10 +414,6 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         instance.is_deleted = True
         instance.save()
 
-    def update(self, request, *args, **kwargs):
-        """ We are allowing only partial update instead of whole update."""
-        return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
         cache.delete_many(['list_restaurant','retrieve_restaurant','restaurant_menu'])
@@ -457,11 +431,6 @@ class MenuItemViewSet(viewsets.ModelViewSet):
     
 
 @extend_schema_view(
-    create=extend_schema(
-        summary="This method is not allowed",
-        description = "Cart will be automatically created upon customer creation.",
-        tags=['Cart']
-    ),
     list=extend_schema(
         summary="Restaurant",
         description="Restaurants",
@@ -471,16 +440,6 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         summary="Cart",
         description="Cart details",
         tags=["Cart"]
-    ),
-    partial_update=extend_schema(
-        summary="This method is not allowed",
-        description="Customer cannot update cart.",
-        tags=['Cart']
-    ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Customer cannot update cart.",
-        tags=['Cart']
     ),
     destroy=extend_schema(
         summary="This method is not allowed",
@@ -497,6 +456,7 @@ class CartViewSet(viewsets.ModelViewSet):
     """ Cart ViewSet to manage the cart of customers. """
     permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = CartSerializer
+    http_method_names = ['get','delete']
 
     def get_queryset(self):
         """
@@ -524,14 +484,6 @@ class CartViewSet(viewsets.ModelViewSet):
         """ Cart creation endpoint is bloacked beacause when a customer will register then customer's cart will be created automatically and every customer can have only one cart."""
         return Response({'error':'User can only have one cart'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
-    def update(self, request, *args, **kwargs):
-        """ We are allowing only partial update instead of whole update."""
-        return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    
-    def destroy(self, request, *args, **kwargs):
-        """ Customers cannot delete their cart instead of delete you can use clear cart method. """
-        return Response({'error':'You cannot delete your cart.'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
 
 @extend_schema_view(
     create=extend_schema(
@@ -554,11 +506,6 @@ class CartViewSet(viewsets.ModelViewSet):
         description=" Update your Cart Items here.",
         tags=['Cart Item']
     ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Please use patch method instead.",
-        tags=['Cart Item']
-    ),
     destroy=extend_schema(
         summary="Cart Item",
         description = "Remove item from the cart.",
@@ -569,6 +516,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
     """ Cart ViewSet to manage the cart of customers. """
     permission_classes = [IsAuthenticated, IsCustomer]
     serializer_class = CartItemSerializer
+    http_method_names = ['get', 'post', 'patch','delete']
 
     def get_queryset(self):
         """ customers can only acccess their own cart items only. """
@@ -576,10 +524,6 @@ class CartItemViewSet(viewsets.ModelViewSet):
             return CartItem.objects.none()
         return CartItem.objects.filter(cart__customer=self.request.user.customer_profile).select_related('menu_item')
     
-    def update(self, request, *args, **kwargs):
-        """ We are allowing only partial update instead of whole update."""
-        return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
 
 @extend_schema_view(
     create=extend_schema(
@@ -596,21 +540,6 @@ class CartItemViewSet(viewsets.ModelViewSet):
         summary="Order",
         description="Order details",
         tags=["Order"]
-    ),
-    partial_update=extend_schema(
-        summary="This method is not allowed",
-        description="Users cannot update orders.",
-        tags=['Order']
-    ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description="Users cannot update orders.",
-        tags=['Order']
-    ),
-    destroy=extend_schema(
-        summary="This method is not allowed",
-        description = "Customer cannot delete order.",
-        tags=['Order']
     ),
     update_status=extend_schema(
         summary="Order Status Update",
@@ -642,6 +571,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     search_fields = ['order_number']
     ordering_fields = ['total_amount',]
     ordering = ['-created_at']
+    http_method_names = ['get', 'post']
 
     def get_serializer_class(self):
         """ Different serializers for different method as per required fields. """
@@ -895,12 +825,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         """
         return Response({'error':'You cannot create orders directly use place method to create orders'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
  
-    def destroy(self, request, *args, **kwargs):
-        """
-        Delete method is blocked because we are not allowing to delete orders.
-        """
-        return Response({'error':'You cannot delete orders'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
  
 @extend_schema_view(
     create=extend_schema(
@@ -918,26 +842,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         description="Order Item details",
         tags=["Order Item"]
     ),
-    partial_update=extend_schema(
-        summary="This method is not allowed",
-        description="Customer cannot update order item after creation",
-        tags=['Order Item']
-    ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Customer cannot update order item after creation",
-        tags=['Order Item']
-    ),
-    destroy=extend_schema(
-        summary="Restaurant",
-        description = "Customer cannot delete order items.",
-        tags=['Order Item']
-    ),
 )
 class OrderItemViewSet(viewsets.ModelViewSet):
     """ Order items ViewSet to see the order items of customers. """
     permission_classes = [IsAuthenticated]
     serializer_class = OrderItemSerializer
+    http_method_names = ['get']
 
     def get_queryset(self):
         """
@@ -962,23 +872,12 @@ class OrderItemViewSet(viewsets.ModelViewSet):
         """
         return Response({'error':'Please order via Cart'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
-    def update(self, request, *args, **kwargs):
-        """
-        User cannot update the order items.
-        """
-        return Response({'error':'You cannot update order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
     def partial_update(self, request, *args, **kwargs):
         """
         User cannot update the order items.
         """
         return Response({'error':'You cannot update order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def destroy(self, request, *args, **kwargs):
-        """
-        User cannot delete the order items.
-        """
-        return Response({'error':'You cannot delete order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 @extend_schema_view(
@@ -997,21 +896,6 @@ class OrderItemViewSet(viewsets.ModelViewSet):
         description="Review details",
         tags=["Review"]
     ),
-    partial_update=extend_schema(
-        summary="This method is not allowed",
-        description = "Review updation is not allowed",
-        tags=['Review']
-    ),
-    update=extend_schema(
-        summary="This method is not allowed",
-        description = "Review updation is not allowed",
-        tags=['Review']
-    ),
-    destroy=extend_schema(
-        summary="This method is not allowed",
-        description = "Review deletion is not allowed",
-        tags=['Review']
-    ),
 )
 class ReviewViewSet(viewsets.ModelViewSet):
     """ Reveiw ViewSet to manage to reviews. """
@@ -1024,6 +908,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     ordering_fields = ['rating',]
     ordering = ['-created_at']
     throttle_classes = [ReviewCreateThrottle]
+    http_method_names = ['get', 'post']
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
@@ -1035,20 +920,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
         customer_profile = self.request.user.customer_profile
         serializer.save(customer=customer_profile)
 
-    def update(self, request, *args, **kwargs):
-        """
-        User cannot update reviews.
-        """
-        return Response({'error':'Please use PATCH method to update'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
     def partial_update(self, request, *args, **kwargs):
         """
         User cannot update reviews.
         """
         return Response({'error':'You cannot update order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
-    def destroy(self, request, *args, **kwargs):
-        """
-        User cannot delete reveiws.
-        """
-        return Response({'error':'You cannot delete reviews'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
