@@ -84,7 +84,8 @@ paths:
   /api/v1/addresses/:
     get:
       operationId: v1_addresses_list
-      description: Customer Viewset to manage customer addresses.
+      description: Customer Addresses
+      summary: Customer Address
       parameters:
       - name: ordering
         required: false
@@ -99,7 +100,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Customer Address
       security:
       - jwtAuth: []
       responses:
@@ -113,9 +114,10 @@ paths:
           description: ''
     post:
       operationId: v1_addresses_create
-      description: Customer Viewset to manage customer addresses.
+      description: Customer Address creation
+      summary: Customer Address
       tags:
-      - v1
+      - Customer Address
       requestBody:
         content:
           application/json:
@@ -140,7 +142,8 @@ paths:
   /api/v1/addresses/{id}/:
     get:
       operationId: v1_addresses_retrieve
-      description: Customer Viewset to manage customer addresses.
+      description: Customer Address details
+      summary: Customer Address
       parameters:
       - in: path
         name: id
@@ -149,7 +152,7 @@ paths:
         description: A unique integer value identifying this address.
         required: true
       tags:
-      - v1
+      - Customer Address
       security:
       - jwtAuth: []
       responses:
@@ -161,7 +164,8 @@ paths:
           description: ''
     put:
       operationId: v1_addresses_update
-      description: Customer Viewset to manage customer addresses.
+      description: Please use patch method instead
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -170,7 +174,7 @@ paths:
         description: A unique integer value identifying this address.
         required: true
       tags:
-      - v1
+      - Customer Address
       requestBody:
         content:
           application/json:
@@ -194,7 +198,8 @@ paths:
           description: ''
     patch:
       operationId: v1_addresses_partial_update
-      description: Customer Viewset to manage customer addresses.
+      description: ' Update your Address details here'
+      summary: Update Customer Address
       parameters:
       - in: path
         name: id
@@ -203,7 +208,7 @@ paths:
         description: A unique integer value identifying this address.
         required: true
       tags:
-      - v1
+      - Customer Address
       requestBody:
         content:
           application/json:
@@ -226,7 +231,8 @@ paths:
           description: ''
     delete:
       operationId: v1_addresses_destroy
-      description: Customer Viewset to manage customer addresses.
+      description: We have added soft delete to delete customer address
+      summary: Soft deletion of customer address
       parameters:
       - in: path
         name: id
@@ -235,7 +241,7 @@ paths:
         description: A unique integer value identifying this address.
         required: true
       tags:
-      - v1
+      - Customer Address
       security:
       - jwtAuth: []
       responses:
@@ -273,7 +279,8 @@ paths:
   /api/v1/cart/:
     get:
       operationId: v1_cart_list
-      description: Cart ViewSet to manage the cart of customers.
+      description: Restaurants
+      summary: Restaurant
       parameters:
       - name: ordering
         required: false
@@ -288,7 +295,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Cart
       security:
       - jwtAuth: []
       responses:
@@ -302,11 +309,10 @@ paths:
           description: ''
     post:
       operationId: v1_cart_create
-      description: Cart creation endpoint is bloacked beacause when a customer will
-        register then customer's cart will be created automatically and every customer
-        can have only one cart.
+      description: Cart will be automatically created upon customer creation.
+      summary: This method is not allowed
       tags:
-      - v1
+      - Cart
       security:
       - jwtAuth: []
       responses:
@@ -319,7 +325,8 @@ paths:
   /api/v1/cart-items/:
     get:
       operationId: v1_cart_items_list
-      description: Cart ViewSet to manage the cart of customers.
+      description: Cart Items
+      summary: Cart Item
       parameters:
       - name: ordering
         required: false
@@ -334,7 +341,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Cart Item
       security:
       - jwtAuth: []
       responses:
@@ -348,9 +355,10 @@ paths:
           description: ''
     post:
       operationId: v1_cart_items_create
-      description: Cart ViewSet to manage the cart of customers.
+      description: Cart Item creation
+      summary: Cart Item
       tags:
-      - v1
+      - Cart Item
       requestBody:
         content:
           application/json:
@@ -375,7 +383,8 @@ paths:
   /api/v1/cart-items/{id}/:
     get:
       operationId: v1_cart_items_retrieve
-      description: Cart ViewSet to manage the cart of customers.
+      description: Cart Item details
+      summary: Cart Item
       parameters:
       - in: path
         name: id
@@ -384,7 +393,7 @@ paths:
         description: A unique integer value identifying this cart item.
         required: true
       tags:
-      - v1
+      - Cart Item
       security:
       - jwtAuth: []
       responses:
@@ -396,7 +405,8 @@ paths:
           description: ''
     put:
       operationId: v1_cart_items_update
-      description: We are allowing only partial update instead of whole update.
+      description: Please use patch method instead.
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -405,7 +415,7 @@ paths:
         description: A unique integer value identifying this cart item.
         required: true
       tags:
-      - v1
+      - Cart Item
       requestBody:
         content:
           application/json:
@@ -429,7 +439,8 @@ paths:
           description: ''
     patch:
       operationId: v1_cart_items_partial_update
-      description: Cart ViewSet to manage the cart of customers.
+      description: ' Update your Cart Items here.'
+      summary: Update Cart Item
       parameters:
       - in: path
         name: id
@@ -438,7 +449,7 @@ paths:
         description: A unique integer value identifying this cart item.
         required: true
       tags:
-      - v1
+      - Cart Item
       requestBody:
         content:
           application/json:
@@ -461,7 +472,8 @@ paths:
           description: ''
     delete:
       operationId: v1_cart_items_destroy
-      description: Cart ViewSet to manage the cart of customers.
+      description: Remove item from the cart.
+      summary: Cart Item
       parameters:
       - in: path
         name: id
@@ -470,7 +482,7 @@ paths:
         description: A unique integer value identifying this cart item.
         required: true
       tags:
-      - v1
+      - Cart Item
       security:
       - jwtAuth: []
       responses:
@@ -479,7 +491,8 @@ paths:
   /api/v1/cart/{id}/:
     get:
       operationId: v1_cart_retrieve
-      description: Cart ViewSet to manage the cart of customers.
+      description: Cart details
+      summary: Cart
       parameters:
       - in: path
         name: id
@@ -488,7 +501,7 @@ paths:
         description: A unique integer value identifying this cart.
         required: true
       tags:
-      - v1
+      - Cart
       security:
       - jwtAuth: []
       responses:
@@ -500,7 +513,8 @@ paths:
           description: ''
     put:
       operationId: v1_cart_update
-      description: We are allowing only partial update instead of whole update.
+      description: Customer cannot update cart.
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -509,7 +523,7 @@ paths:
         description: A unique integer value identifying this cart.
         required: true
       tags:
-      - v1
+      - Cart
       security:
       - jwtAuth: []
       responses:
@@ -521,7 +535,8 @@ paths:
           description: ''
     patch:
       operationId: v1_cart_partial_update
-      description: Cart ViewSet to manage the cart of customers.
+      description: Customer cannot update cart.
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -530,7 +545,7 @@ paths:
         description: A unique integer value identifying this cart.
         required: true
       tags:
-      - v1
+      - Cart
       security:
       - jwtAuth: []
       responses:
@@ -542,8 +557,8 @@ paths:
           description: ''
     delete:
       operationId: v1_cart_destroy
-      description: Customers cannot delete their cart instead of delete you can use
-        clear cart method.
+      description: Customer cannot delete cart.
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -552,7 +567,7 @@ paths:
         description: A unique integer value identifying this cart.
         required: true
       tags:
-      - v1
+      - Cart
       security:
       - jwtAuth: []
       responses:
@@ -561,9 +576,10 @@ paths:
   /api/v1/cart/clear/:
     delete:
       operationId: v1_cart_clear_destroy
-      description: Method to remove all cart items from the cart.
+      description: Remove items from the cart.
+      summary: Clear the Cart
       tags:
-      - v1
+      - Cart
       security:
       - jwtAuth: []
       responses:
@@ -572,7 +588,8 @@ paths:
   /api/v1/customers/:
     get:
       operationId: v1_customers_list
-      description: Customer Viewset to manage customer profile.
+      description: Customer profile
+      summary: ' Customer Profile'
       parameters:
       - name: ordering
         required: false
@@ -587,7 +604,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Customer Profile
       security:
       - jwtAuth: []
       responses:
@@ -601,9 +618,10 @@ paths:
           description: ''
     post:
       operationId: v1_customers_create
-      description: Customer Viewset to manage customer profile.
+      description: Customer profile creates automatically upon user creation
+      summary: This method is not allowed
       tags:
-      - v1
+      - Customer Profile
       requestBody:
         content:
           application/json:
@@ -627,7 +645,8 @@ paths:
   /api/v1/customers/{id}/:
     get:
       operationId: v1_customers_retrieve
-      description: Customer Viewset to manage customer profile.
+      description: Customer profile details
+      summary: ' Customer Profile'
       parameters:
       - in: path
         name: id
@@ -636,7 +655,7 @@ paths:
         description: A unique integer value identifying this customer profile.
         required: true
       tags:
-      - v1
+      - Customer Profile
       security:
       - jwtAuth: []
       responses:
@@ -648,7 +667,8 @@ paths:
           description: ''
     put:
       operationId: v1_customers_update
-      description: Customer Viewset to manage customer profile.
+      description: Please use patch method instead
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -657,7 +677,7 @@ paths:
         description: A unique integer value identifying this customer profile.
         required: true
       tags:
-      - v1
+      - Customer Profile
       requestBody:
         content:
           application/json:
@@ -680,7 +700,8 @@ paths:
           description: ''
     patch:
       operationId: v1_customers_partial_update
-      description: Customer Viewset to manage customer profile.
+      description: ' Update your profile details here'
+      summary: Update Customer Profile
       parameters:
       - in: path
         name: id
@@ -689,7 +710,7 @@ paths:
         description: A unique integer value identifying this customer profile.
         required: true
       tags:
-      - v1
+      - Customer Profile
       requestBody:
         content:
           application/json:
@@ -712,7 +733,8 @@ paths:
           description: ''
     delete:
       operationId: v1_customers_destroy
-      description: Customer Viewset to manage customer profile.
+      description: We have added soft delete to delete customer profile
+      summary: Customer Profile
       parameters:
       - in: path
         name: id
@@ -721,7 +743,7 @@ paths:
         description: A unique integer value identifying this customer profile.
         required: true
       tags:
-      - v1
+      - Customer Profile
       security:
       - jwtAuth: []
       responses:
@@ -730,7 +752,8 @@ paths:
   /api/v1/drivers/:
     get:
       operationId: v1_drivers_list
-      description: Driver ViewSet to manage driver's profile.
+      description: Driver profile
+      summary: Driver Profile
       parameters:
       - name: ordering
         required: false
@@ -745,7 +768,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Driver Profile
       security:
       - jwtAuth: []
       responses:
@@ -759,9 +782,10 @@ paths:
           description: ''
     post:
       operationId: v1_drivers_create
-      description: Driver ViewSet to manage driver's profile.
+      description: CusDrivertomer profile creates automatically upon user creation
+      summary: This method is not allowed
       tags:
-      - v1
+      - Driver Profile
       requestBody:
         content:
           application/json:
@@ -786,7 +810,8 @@ paths:
   /api/v1/drivers/{id}/:
     get:
       operationId: v1_drivers_retrieve
-      description: Driver ViewSet to manage driver's profile.
+      description: Driver profile details
+      summary: Driver Profile
       parameters:
       - in: path
         name: id
@@ -795,7 +820,7 @@ paths:
         description: A unique integer value identifying this driver profile.
         required: true
       tags:
-      - v1
+      - Driver Profile
       security:
       - jwtAuth: []
       responses:
@@ -807,7 +832,8 @@ paths:
           description: ''
     put:
       operationId: v1_drivers_update
-      description: Driver ViewSet to manage driver's profile.
+      description: Please use patch method instead
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -816,7 +842,7 @@ paths:
         description: A unique integer value identifying this driver profile.
         required: true
       tags:
-      - v1
+      - Driver Profile
       requestBody:
         content:
           application/json:
@@ -840,7 +866,8 @@ paths:
           description: ''
     patch:
       operationId: v1_drivers_partial_update
-      description: Driver ViewSet to manage driver's profile.
+      description: ' Update your profile details here'
+      summary: Update Driver Profile
       parameters:
       - in: path
         name: id
@@ -849,7 +876,7 @@ paths:
         description: A unique integer value identifying this driver profile.
         required: true
       tags:
-      - v1
+      - Driver Profile
       requestBody:
         content:
           application/json:
@@ -872,7 +899,8 @@ paths:
           description: ''
     delete:
       operationId: v1_drivers_destroy
-      description: Driver ViewSet to manage driver's profile.
+      description: We have added soft delete to delete driver profile
+      summary: Driver Profile
       parameters:
       - in: path
         name: id
@@ -881,7 +909,7 @@ paths:
         description: A unique integer value identifying this driver profile.
         required: true
       tags:
-      - v1
+      - Driver Profile
       security:
       - jwtAuth: []
       responses:
@@ -890,7 +918,8 @@ paths:
   /api/v1/menu-items/:
     get:
       operationId: v1_menu_items_list
-      description: Menu items ViewSet to manage the menu items of restaurant.
+      description: Menu Item
+      summary: Menu Items
       parameters:
       - in: query
         name: category
@@ -961,7 +990,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Menu Items
       security:
       - jwtAuth: []
       responses:
@@ -973,9 +1002,10 @@ paths:
           description: ''
     post:
       operationId: v1_menu_items_create
-      description: Menu items ViewSet to manage the menu items of restaurant.
+      description: Menu Items creation
+      summary: Menu Items
       tags:
-      - v1
+      - Menu Items
       requestBody:
         content:
           application/json:
@@ -1000,7 +1030,8 @@ paths:
   /api/v1/menu-items/{id}/:
     get:
       operationId: v1_menu_items_retrieve
-      description: Menu items ViewSet to manage the menu items of restaurant.
+      description: Menu Item details
+      summary: Menu Items
       parameters:
       - in: path
         name: id
@@ -1009,7 +1040,7 @@ paths:
         description: A unique integer value identifying this menu item.
         required: true
       tags:
-      - v1
+      - Menu Items
       security:
       - jwtAuth: []
       responses:
@@ -1021,7 +1052,8 @@ paths:
           description: ''
     put:
       operationId: v1_menu_items_update
-      description: Menu items ViewSet to manage the menu items of restaurant.
+      description: Please use patch method instead
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1030,7 +1062,7 @@ paths:
         description: A unique integer value identifying this menu item.
         required: true
       tags:
-      - v1
+      - Menu Items
       requestBody:
         content:
           application/json:
@@ -1054,7 +1086,8 @@ paths:
           description: ''
     patch:
       operationId: v1_menu_items_partial_update
-      description: Menu items ViewSet to manage the menu items of restaurant.
+      description: ' Update your menu items details here'
+      summary: Update Menu Items
       parameters:
       - in: path
         name: id
@@ -1063,7 +1096,7 @@ paths:
         description: A unique integer value identifying this menu item.
         required: true
       tags:
-      - v1
+      - Menu Items
       requestBody:
         content:
           application/json:
@@ -1086,7 +1119,8 @@ paths:
           description: ''
     delete:
       operationId: v1_menu_items_destroy
-      description: Menu items ViewSet to manage the menu items of restaurant.
+      description: We have added soft delete to delete Menu Items
+      summary: Menu Items
       parameters:
       - in: path
         name: id
@@ -1095,7 +1129,7 @@ paths:
         description: A unique integer value identifying this menu item.
         required: true
       tags:
-      - v1
+      - Menu Items
       security:
       - jwtAuth: []
       responses:
@@ -1104,7 +1138,8 @@ paths:
   /api/v1/orderitems/:
     get:
       operationId: v1_orderitems_list
-      description: Order items ViewSet to see the order items of customers.
+      description: Order Items
+      summary: Order Item
       parameters:
       - name: ordering
         required: false
@@ -1119,7 +1154,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Order Item
       security:
       - jwtAuth: []
       responses:
@@ -1133,9 +1168,10 @@ paths:
           description: ''
     post:
       operationId: v1_orderitems_create
-      description: User cannot add items only via cart users can create.
+      description: Customer cannot create order items
+      summary: This method is not allowed
       tags:
-      - v1
+      - Order Item
       requestBody:
         content:
           application/json:
@@ -1160,7 +1196,8 @@ paths:
   /api/v1/orderitems/{id}/:
     get:
       operationId: v1_orderitems_retrieve
-      description: Order items ViewSet to see the order items of customers.
+      description: Order Item details
+      summary: Order Item
       parameters:
       - in: path
         name: id
@@ -1169,7 +1206,7 @@ paths:
         description: A unique integer value identifying this order item.
         required: true
       tags:
-      - v1
+      - Order Item
       security:
       - jwtAuth: []
       responses:
@@ -1181,7 +1218,8 @@ paths:
           description: ''
     put:
       operationId: v1_orderitems_update
-      description: User cannot update the order items.
+      description: Customer cannot update order item after creation
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1190,7 +1228,7 @@ paths:
         description: A unique integer value identifying this order item.
         required: true
       tags:
-      - v1
+      - Order Item
       requestBody:
         content:
           application/json:
@@ -1214,7 +1252,8 @@ paths:
           description: ''
     patch:
       operationId: v1_orderitems_partial_update
-      description: User cannot update the order items.
+      description: Customer cannot update order item after creation
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1223,7 +1262,7 @@ paths:
         description: A unique integer value identifying this order item.
         required: true
       tags:
-      - v1
+      - Order Item
       requestBody:
         content:
           application/json:
@@ -1246,7 +1285,8 @@ paths:
           description: ''
     delete:
       operationId: v1_orderitems_destroy
-      description: User cannot delete the order items.
+      description: Customer cannot delete order items.
+      summary: Restaurant
       parameters:
       - in: path
         name: id
@@ -1255,7 +1295,7 @@ paths:
         description: A unique integer value identifying this order item.
         required: true
       tags:
-      - v1
+      - Order Item
       security:
       - jwtAuth: []
       responses:
@@ -1264,7 +1304,8 @@ paths:
   /api/v1/orders/:
     get:
       operationId: v1_orders_list
-      description: Order ViewSet to manage the order of customers.
+      description: Order
+      summary: Order
       parameters:
       - in: query
         name: created_at__gte
@@ -1314,7 +1355,7 @@ paths:
           * `delivered` - Delivered
           * `cancelled` - Cancelled
       tags:
-      - v1
+      - Order
       security:
       - jwtAuth: []
       responses:
@@ -1326,10 +1367,10 @@ paths:
           description: ''
     post:
       operationId: v1_orders_create
-      description: Create method is blocked because we are allowing to order from
-        the cart only.
+      description: You can create order via place method.
+      summary: This method is not allowed
       tags:
-      - v1
+      - Order
       requestBody:
         content:
           application/json:
@@ -1354,7 +1395,8 @@ paths:
   /api/v1/orders/{id}/:
     get:
       operationId: v1_orders_retrieve
-      description: Order ViewSet to manage the order of customers.
+      description: Order details
+      summary: Order
       parameters:
       - in: path
         name: id
@@ -1363,7 +1405,7 @@ paths:
         description: A unique integer value identifying this order.
         required: true
       tags:
-      - v1
+      - Order
       security:
       - jwtAuth: []
       responses:
@@ -1375,7 +1417,8 @@ paths:
           description: ''
     put:
       operationId: v1_orders_update
-      description: Order ViewSet to manage the order of customers.
+      description: Users cannot update orders.
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1384,7 +1427,7 @@ paths:
         description: A unique integer value identifying this order.
         required: true
       tags:
-      - v1
+      - Order
       requestBody:
         content:
           application/json:
@@ -1408,7 +1451,8 @@ paths:
           description: ''
     patch:
       operationId: v1_orders_partial_update
-      description: Order ViewSet to manage the order of customers.
+      description: Users cannot update orders.
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1417,7 +1461,7 @@ paths:
         description: A unique integer value identifying this order.
         required: true
       tags:
-      - v1
+      - Order
       requestBody:
         content:
           application/json:
@@ -1440,8 +1484,8 @@ paths:
           description: ''
     delete:
       operationId: v1_orders_destroy
-      description: Delete method is blocked because we are not allowing to delete
-        orders.
+      description: Customer cannot delete order.
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1450,7 +1494,7 @@ paths:
         description: A unique integer value identifying this order.
         required: true
       tags:
-      - v1
+      - Order
       security:
       - jwtAuth: []
       responses:
@@ -1459,7 +1503,8 @@ paths:
   /api/v1/orders/{id}/assign-driver/:
     post:
       operationId: v1_orders_assign_driver_create
-      description: Custom method to assign the driver to order.
+      description: Assign the driver to the order.
+      summary: Driver Assign to Order
       parameters:
       - in: path
         name: id
@@ -1468,7 +1513,7 @@ paths:
         description: A unique integer value identifying this order.
         required: true
       tags:
-      - v1
+      - Order
       requestBody:
         content:
           application/json:
@@ -1493,7 +1538,8 @@ paths:
   /api/v1/orders/{id}/cancel/:
     post:
       operationId: v1_orders_cancel_create
-      description: Custom method to cancel the order.
+      description: Customer can cancel the order if it is not preapared.
+      summary: Cancel Order
       parameters:
       - in: path
         name: id
@@ -1502,7 +1548,7 @@ paths:
         description: A unique integer value identifying this order.
         required: true
       tags:
-      - v1
+      - Order
       requestBody:
         content:
           application/json:
@@ -1527,7 +1573,8 @@ paths:
   /api/v1/orders/{id}/update-status/:
     post:
       operationId: v1_orders_update_status_create
-      description: Custom method to update the order status
+      description: Order Status Update.
+      summary: Order Status Update
       parameters:
       - in: path
         name: id
@@ -1536,7 +1583,7 @@ paths:
         description: A unique integer value identifying this order.
         required: true
       tags:
-      - v1
+      - Order
       requestBody:
         content:
           application/json:
@@ -1561,9 +1608,10 @@ paths:
   /api/v1/orders/place/:
     post:
       operationId: v1_orders_place_create
-      description: Custom method to place the order
+      description: Customers can place orders from here.
+      summary: Place Order
       tags:
-      - v1
+      - Order
       requestBody:
         content:
           application/json:
@@ -1588,8 +1636,8 @@ paths:
   /api/v1/restaurants/:
     get:
       operationId: v1_restaurants_list
-      description: Overriden list method to get pagination on restaurants and added
-        5 minutes.
+      description: Restaurants
+      summary: Restaurant
       parameters:
       - in: query
         name: average_rating__gte
@@ -1654,7 +1702,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Restaurant
       security:
       - jwtAuth: []
       responses:
@@ -1666,9 +1714,10 @@ paths:
           description: ''
     post:
       operationId: v1_restaurants_create
-      description: Driver ViewSet to manage restaurants.
+      description: Restaurant creation
+      summary: Restaurant
       tags:
-      - v1
+      - Restaurant
       requestBody:
         content:
           application/json:
@@ -1693,7 +1742,8 @@ paths:
   /api/v1/restaurants/{id}/:
     get:
       operationId: v1_restaurants_retrieve
-      description: Added cache of 10 minutes on restaurant details method.
+      description: Restaurant details
+      summary: Restaurant
       parameters:
       - in: path
         name: id
@@ -1702,7 +1752,7 @@ paths:
         description: A unique integer value identifying this restaurant.
         required: true
       tags:
-      - v1
+      - Restaurant
       security:
       - jwtAuth: []
       responses:
@@ -1714,7 +1764,8 @@ paths:
           description: ''
     put:
       operationId: v1_restaurants_update
-      description: Driver ViewSet to manage restaurants.
+      description: Please use patch method instead
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1723,7 +1774,7 @@ paths:
         description: A unique integer value identifying this restaurant.
         required: true
       tags:
-      - v1
+      - Restaurant
       requestBody:
         content:
           application/json:
@@ -1747,7 +1798,8 @@ paths:
           description: ''
     patch:
       operationId: v1_restaurants_partial_update
-      description: Driver ViewSet to manage restaurants.
+      description: ' Update your Restaurant details here'
+      summary: Update Restaurant Details
       parameters:
       - in: path
         name: id
@@ -1756,7 +1808,7 @@ paths:
         description: A unique integer value identifying this restaurant.
         required: true
       tags:
-      - v1
+      - Restaurant
       requestBody:
         content:
           application/json:
@@ -1779,7 +1831,8 @@ paths:
           description: ''
     delete:
       operationId: v1_restaurants_destroy
-      description: Driver ViewSet to manage restaurants.
+      description: We have added soft delete to delete Restaurant
+      summary: Restaurant
       parameters:
       - in: path
         name: id
@@ -1788,7 +1841,7 @@ paths:
         description: A unique integer value identifying this restaurant.
         required: true
       tags:
-      - v1
+      - Restaurant
       security:
       - jwtAuth: []
       responses:
@@ -1797,8 +1850,8 @@ paths:
   /api/v1/restaurants/{id}/menu/:
     get:
       operationId: v1_restaurants_menu_retrieve
-      description: Created a custom menu method to get menu of the restaurant with
-        15 minutes of cache.
+      description: Restaurant Menu
+      summary: Restaurant
       parameters:
       - in: path
         name: id
@@ -1807,7 +1860,7 @@ paths:
         description: A unique integer value identifying this restaurant.
         required: true
       tags:
-      - v1
+      - Restaurant
       security:
       - jwtAuth: []
       responses:
@@ -1820,10 +1873,10 @@ paths:
   /api/v1/restaurants/popular/:
     get:
       operationId: v1_restaurants_popular_retrieve
-      description: Created a custom method to get popular restaurants and added 30
-        minutes of cache on the method.
+      description: Popular Restaurants
+      summary: Restaurant
       tags:
-      - v1
+      - Restaurant
       security:
       - jwtAuth: []
       responses:
@@ -1836,7 +1889,8 @@ paths:
   /api/v1/reviews/:
     get:
       operationId: v1_reviews_list
-      description: Reveiw ViewSet to manage to reviews.
+      description: Reviews
+      summary: Review
       parameters:
       - name: limit
         required: false
@@ -1875,7 +1929,7 @@ paths:
         schema:
           type: string
       tags:
-      - v1
+      - Review
       security:
       - jwtAuth: []
       responses:
@@ -1887,9 +1941,10 @@ paths:
           description: ''
     post:
       operationId: v1_reviews_create
-      description: Reveiw ViewSet to manage to reviews.
+      description: Review creation
+      summary: Review
       tags:
-      - v1
+      - Review
       requestBody:
         content:
           application/json:
@@ -1914,7 +1969,8 @@ paths:
   /api/v1/reviews/{id}/:
     get:
       operationId: v1_reviews_retrieve
-      description: Reveiw ViewSet to manage to reviews.
+      description: Review details
+      summary: Review
       parameters:
       - in: path
         name: id
@@ -1923,7 +1979,7 @@ paths:
         description: A unique integer value identifying this review.
         required: true
       tags:
-      - v1
+      - Review
       security:
       - jwtAuth: []
       responses:
@@ -1935,7 +1991,8 @@ paths:
           description: ''
     put:
       operationId: v1_reviews_update
-      description: User cannot update reviews.
+      description: Review updation is not allowed
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1944,7 +2001,7 @@ paths:
         description: A unique integer value identifying this review.
         required: true
       tags:
-      - v1
+      - Review
       requestBody:
         content:
           application/json:
@@ -1968,7 +2025,8 @@ paths:
           description: ''
     patch:
       operationId: v1_reviews_partial_update
-      description: User cannot update reviews.
+      description: Review updation is not allowed
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -1977,7 +2035,7 @@ paths:
         description: A unique integer value identifying this review.
         required: true
       tags:
-      - v1
+      - Review
       requestBody:
         content:
           application/json:
@@ -2000,7 +2058,8 @@ paths:
           description: ''
     delete:
       operationId: v1_reviews_destroy
-      description: User cannot delete reveiws.
+      description: Review deletion is not allowed
+      summary: This method is not allowed
       parameters:
       - in: path
         name: id
@@ -2009,7 +2068,7 @@ paths:
         description: A unique integer value identifying this review.
         required: true
       tags:
-      - v1
+      - Review
       security:
       - jwtAuth: []
       responses:
@@ -2075,10 +2134,13 @@ components:
             $ref: '#/components/schemas/CartItem'
           readOnly: true
         total:
-          type: string
+          type: number
+          format: double
+          description: method to count total amount of cart items.
           readOnly: true
         item_count:
-          type: string
+          type: integer
+          description: method to get items count of cart items.
           readOnly: true
       required:
       - cart_items
@@ -2112,7 +2174,9 @@ components:
           type: string
           nullable: true
         subtotal:
-          type: string
+          type: number
+          format: double
+          description: method to get subtotal of cart items.
           readOnly: true
       required:
       - id
@@ -2501,10 +2565,12 @@ components:
             $ref: '#/components/schemas/OrderItem'
           readOnly: true
         can_cancel:
-          type: string
+          type: boolean
+          description: Method to get order is cancallable or not.
           readOnly: true
         is_delivered:
-          type: string
+          type: boolean
+          description: Method to get the order is delivered or not.
           readOnly: true
       required:
       - actual_delivery_time
@@ -2981,7 +3047,8 @@ components:
         is_open:
           type: boolean
         is_open_now:
-          type: string
+          type: boolean
+          description: method to check restaurant is open or not
           readOnly: true
         delivery_fee:
           type: string
@@ -3001,6 +3068,7 @@ components:
           readOnly: true
         menu_items:
           type: string
+          description: method to get menu items of restaurant
           readOnly: true
       required:
       - address

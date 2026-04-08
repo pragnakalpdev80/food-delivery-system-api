@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from datetime import datetime, timedelta
 from api.models import (
     User, CustomerProfile, DriverProfile, 
@@ -40,9 +42,10 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomerProfile
-        fields = ['user', 'avatar', 'total_orders', 'loyalty_points','default_address']
-        read_only_fields = ['user', 'total_orders', 'loyalty_points']  
+        fields = ['id','user', 'avatar', 'total_orders', 'loyalty_points','default_address']
+        read_only_fields = ['id','user', 'total_orders', 'loyalty_points']  
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_default_address(self, obj):
          # print(obj)
         address = obj.default_address      
@@ -71,10 +74,11 @@ class DriverProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DriverProfile
-        fields = ['user', 'avatar', 'vehicle_type', 'vehicle_number', 'delivery_stats',
+        fields = ['id','user', 'avatar', 'vehicle_type', 'vehicle_number', 'delivery_stats',
                   'license_number', 'is_available',]
-        read_only_fields = ['user', 'delivery_stats']  
+        read_only_fields = ['id','user', 'delivery_stats']  
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_delivery_stats(self, obj):
         return obj.get_delivery_stats()
     
@@ -114,16 +118,19 @@ class RestaurantDetailSerializer(serializers.ModelSerializer):
                   'average_rating', 'total_reviews', 'menu_items']
         read_only_fields = ['average_rating', 'total_reviews', 'owner']
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_open_now(self, obj):
         """ method to check restaurant is open or not """
          # print(obj)
         return obj.is_currently_open()
     
+    @extend_schema_field(OpenApiTypes.STR)
     def get_menu_items(self, obj):
         """ method to get menu items of restaurant """
         items = obj.menu_items.filter(is_available=True)
         return MenuItemSerializer(items, many=True).data
 
+    @extend_schema_field(OpenApiTypes.DECIMAL)
     def get_reviews(self, obj):
         """ method to get reviews of restaurant """
         reviews = obj.reviews.all().order_by('-created_at')
@@ -188,6 +195,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         fields = ['id', 'menu_item', 'menu_item_name', 'menu_item_price',
                   'quantity', 'special_instructions', 'subtotal']
 
+    @extend_schema_field(OpenApiTypes.DECIMAL)
     def get_subtotal(self, obj):
         """ method to get subtotal of cart items. """
         return obj.get_subtotal()
@@ -236,10 +244,12 @@ class CartSerializer(serializers.ModelSerializer):
                   'cart_items', 'total', 'item_count']
         read_only_fields = ['customer', 'restaurant']
 
+    @extend_schema_field(OpenApiTypes.DECIMAL)
     def get_total(self, obj):
         """ method to count total amount of cart items. """
         return obj.get_total()
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_item_count(self, obj):
         """ method to get items count of cart items. """
         return obj.cart_items.count()
@@ -354,10 +364,12 @@ class OrderDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ['customer', 'order_number', 'subtotal', 'delivery_fee',
                             'tax', 'total_amount', 'estimated_delivery_time', 'actual_delivery_time']
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_can_cancel(self, obj):
         """ Method to get order is cancallable or not. """
         return obj.can_cancel()
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_is_delivered(self, obj):
         """ Method to get the order is delivered or not. """
         return obj.is_delivered() 

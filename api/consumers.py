@@ -2,7 +2,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from datetime import datetime
 from django.contrib.auth.models import AnonymousUser
-
+from .models import CustomerProfile,DriverProfile,Restaurant
 
 class OrderConsumer(AsyncWebsocketConsumer):
     """ Orders notification consumer """
@@ -135,6 +135,11 @@ class CustomerDashboardConsumer(AsyncWebsocketConsumer):
             return
         
         if not self.scope['user'].user_type == 'customer':
+            await self.close()
+            return
+
+        if not self.scope['user'].id == self.scope["url_route"]["kwargs"]["customer_id"]:
+            print(self.scope['user'].id)
             await self.close()
             return
 

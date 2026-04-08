@@ -84,7 +84,7 @@ class DriverProfile(TimestampedModel, SoftDeleteModel):
         ('bike',"Bike"),('scooter',"Scooter"),('car',"Car"),
     )   
 
-    user = models.OneToOneField(User,on_delete=models.CASCADE)
+    user = models.OneToOneField(User,on_delete=models.CASCADE,related_name='driver_profile')
     avatar = models.ImageField(default='default.jpg', upload_to='driver_avatar')
     vehicle_type = models.CharField(max_length=10,choices=VEHICLE_CHOICES)
     vehicle_number = models.CharField(max_length=10)
@@ -113,7 +113,7 @@ class Restaurant(TimestampedModel, SoftDeleteModel):
         ("italian","Italian"), ("chinese","Chinese"), ("indian","Indian"), ("mexican","Mexican"), 
         ("american","American"), ("japanese","Japanese"), ("thai","Thai"), ("mediterranean","Mediterranean")
     )
-    owner = models.OneToOneField(User,on_delete=models.CASCADE, related_name="restaurant")
+    owner = models.OneToOneField(User,on_delete=models.CASCADE, related_name="restaurant_owner")
     name = models.CharField(max_length=50)
     description = models.TextField()
     cuisine_type = models.CharField(choices=CUISINE_CHOICES)
