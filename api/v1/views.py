@@ -465,7 +465,7 @@ class MenuItemViewSet(viewsets.ModelViewSet):
         """
         if self.action in ['list', 'retrieve']:
             return [IsAuthenticated()]
-        return [IsAuthenticated(), IsRestaurantOwner(), IsOwnerOrReadOnly()]
+        return [IsAuthenticated(), IsRestaurantOwner()]
 
     def get_queryset(self):
         """
