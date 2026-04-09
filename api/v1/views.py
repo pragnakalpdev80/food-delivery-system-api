@@ -140,7 +140,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """ Queryset to get customer can only access own profile. """
         if not self.request.user.is_authenticated:
             return CustomerProfile.objects.none()
-        return CustomerProfile.objects.filter(user=self.request.user)
+        return CustomerProfile.objects.filter(user=self.request.user,is_deleted=False)
 
     def perform_destroy(self, instance):
         """ Method to soft delete the customer. """
@@ -357,6 +357,10 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         """ Method to soft delete the restaurant. """
         instance.is_deleted = True
+        menu_items = MenuItem.objects.filter(restaurant=instance.id,is_deleted=False)
+        for menu_item in menu_items:
+            menu_item.is_deleted = True
+            menu_item.save()
         instance.save()
 
     @method_decorator(cache_page(60 * 5), name='list_restaurant')
