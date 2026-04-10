@@ -103,6 +103,8 @@ def custom_exception_handler(exc, context):
         logger.error(
             f"Error {error_data['error']['status_code']}: {exc}",
             extra={
+                'ip_address': request.META.get('REMOTE_ADDR'),
+                'user_agent': request.META.get('HTTP_USER_AGENT'),
                 'request_path': request.path if request else None,
                 'request_method': request.method if request else None,
             },
@@ -110,7 +112,6 @@ def custom_exception_handler(exc, context):
         )
         
         response.data = error_data['error']
-    
     # Handle unexpected errors (500)
     else:
         error_data = {

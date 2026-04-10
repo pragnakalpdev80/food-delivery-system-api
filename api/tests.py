@@ -14,14 +14,6 @@ def api_client():
     return APIClient()
 
 @pytest.fixture
-def user():
-    return User.objects.filter(username='pytest_r', password='Hill@1234').first()
-
-@pytest.fixture
-def restaurant(user):
-    return Restaurant.objects.filter(owner=user).first()
-
-@pytest.fixture
 def restaurant_owner_user(create_user):
     return create_user("owner1", "restaurant_owner", "9000000002")
 
@@ -46,7 +38,7 @@ def owner_restaurant(api_client, restaurant_owner_user):
 @pytest.fixture(scope='class')
 def restaurant(db,restaurant_owner_user):
     restaurant = Restaurant.objects.create(
-        owner=user,
+        owner=restaurant_owner_user,
         name='Test Restaurant',
         description='testing food',
         cuisine_type='indian',

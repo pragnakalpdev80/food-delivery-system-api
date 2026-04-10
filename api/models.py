@@ -32,6 +32,9 @@ class User(AbstractUser, TimestampedModel, SoftDeleteModel):
    email = models. EmailField(unique=True)
    phone_no = models.CharField(max_length = 10,unique=True)
    user_type = models.CharField(choices=USER_TYPE_CHOICES)
+
+   USERNAME_FIELD = 'email'
+   REQUIRED_FIELDS = ['phone_no']
    
    def __str__(self):
        return f"{self.username} ({self.user_type})"
@@ -247,7 +250,7 @@ class OrderItem(models.Model):
     created_at = models.DateTimeField(auto_now_add=True,db_index=True)
 
     def __str__(self):
-       return f"{self.menu_item}"
+       return f"{self.menu_item}: {self.order.customer}"
 
 
 class Review(TimestampedModel):

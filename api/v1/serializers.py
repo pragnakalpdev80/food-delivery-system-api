@@ -16,13 +16,14 @@ from api.validators import (
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """ User registration serializer with required fields """
+    username = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True, min_length=8, style={'input_type': 'password'})
     confirm_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'confirm_password',
-                  'first_name', 'last_name', 'phone_no', 'user_type']
+        fields = ['id', 'username', 'email', 'password', 'confirm_password', 'phone_no', 'user_type']
+        read_only_fields = ['id']
 
     def validate(self, data):
         if data['password'] != data['confirm_password']:
@@ -56,10 +57,12 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
     
 class AddressSerializer(serializers.ModelSerializer):
     """ Customer's address serializer with required fields """
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Address
-        fields = ['id','address_name', 'address', 'is_default', 'user']
-        read_only_fields = ['id','user']
+        fields = ['id', 'address_name', 'address', 'is_default', 'user']
+        read_only_fields = ['id', 'user']
     
     def create(self, validated_data):
         request = self.context.get('request')
@@ -237,7 +240,8 @@ class CartSerializer(serializers.ModelSerializer):
     cart_items = CartItemSerializer(many=True, read_only=True)
     total = serializers.SerializerMethodField()
     item_count = serializers.SerializerMethodField()
-    
+    customer = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Cart
         fields = ['id', 'customer', 'restaurant',
@@ -351,9 +355,12 @@ class OrderSerializer(serializers.ModelSerializer):
 class OrderDetailSerializer(serializers.ModelSerializer):
     """ Order detail serializer with order items and order status. """
     restaurant = RestaurantSerializer(read_only=True)
-    menu_item = OrderItemSerializer(read_only=True, many=True)  
-    can_cancel = serializers.SerializerMethodField()         
-    is_delivered = serializers.SerializerMethodField()       
+    menu_item = OrderItemSerializer(read_only=True, many=True)
+    customer = serializers.PrimaryKeyRelatedField(read_only=True)
+    driver = serializers.PrimaryKeyRelatedField(read_only=True)
+    delivery_address = serializers.PrimaryKeyRelatedField(read_only=True)
+    can_cancel = serializers.SerializerMethodField()
+    is_delivered = serializers.SerializerMethodField()
 
     class Meta:
         model = Order

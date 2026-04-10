@@ -6,7 +6,6 @@ from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, generics
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiExample, OpenApiResponse
 from rest_framework.response import Response
 from rest_framework import viewsets, status, generics, filters
@@ -140,7 +139,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """ Queryset to get customer can only access own profile. """
         if not self.request.user.is_authenticated:
             return CustomerProfile.objects.none()
-        return CustomerProfile.objects.filter(user=self.request.user,is_deleted=False)
+        return CustomerProfile.objects.select_related('user').filter(user=self.request.user,is_deleted=False)
 
     def perform_destroy(self, instance):
         """ Method to soft delete the customer. """
@@ -204,7 +203,7 @@ class AddressViewSet(viewsets.ModelViewSet):
         """ Only customers can manage own addresses only"""
         if not self.request.user.is_authenticated:
             return Address.objects.none()
-        return Address.objects.filter(user = self.request.user,is_deleted=False)
+        return Address.objects.select_related('user').filter(user = self.request.user,is_deleted=False)
     
     def perform_destroy(self, instance):
         """ Method to soft delete the address. """
@@ -253,7 +252,7 @@ class DriverViewSet(viewsets.ModelViewSet):
         """ Queryset to get drivers can only access own profile. """
         if not self.request.user.is_authenticated:
             return DriverProfile.objects.none()
-        return DriverProfile.objects.filter(user=self.request.user,is_deleted=False)
+        return DriverProfile.objects.select_related('user').filter(user=self.request.user,is_deleted=False)
 
     def perform_destroy(self, instance):
         """ Method to soft delete the driver profile. """
@@ -326,9 +325,8 @@ class DriverViewSet(viewsets.ModelViewSet):
 )
 class RestaurantViewSet(viewsets.ModelViewSet):
     """ Driver ViewSet to manage restaurants. """
-    permission_classes = [IsAuthenticated, IsRestaurantOwner, IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated]
     pagination_class = RestaurantPageNumberPagination
-    queryset = Restaurant.objects.filter(is_deleted=False)
     serializer_class = RestaurantDetailSerializer
     filterset_class = RestaurantFilter
     filter_backends = [DjangoFilterBackend,filters.SearchFilter,filters.OrderingFilter]
@@ -336,6 +334,18 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     ordering_fields = ['-average_rating', 'delivery_fee', 'created_at',]
     ordering = ['-created_at']
     http_method_names = ['get', 'post', 'patch','delete']
+
+    def get_queryset(self):
+        """
+        Restaurant owners see only their own restaurant.
+        All other authenticated users see all non-deleted restaurants.
+        """
+        user = self.request.user
+        if not user.is_authenticated:
+            return Restaurant.objects.none()
+        if self.action in ['list', 'retrieve', 'menu', 'popular']:
+            return Restaurant.objects.filter(is_deleted=False)
+        return Restaurant.objects.filter(owner=user, is_deleted=False)
     
     def get_permissions(self):
         """
@@ -386,7 +396,7 @@ class RestaurantViewSet(viewsets.ModelViewSet):
     def menu(self, request,  *args, **kwargs):
         """ Created a custom menu method to get menu of the restaurant with 15 minutes of cache. """
         restaurant = self.get_object()
-        items = MenuItem.objects.filter(restaurant_id=restaurant.id, is_available=True)
+        items = MenuItem.objects.select_related('restaurant').filter(restaurant_id=restaurant.id, is_available=True)
           # print(items)
         serializer = MenuItemSerializer(items, many=True, context={'request': request})
         return Response(serializer.data,status=status.HTTP_200_OK)
@@ -398,13 +408,13 @@ class RestaurantViewSet(viewsets.ModelViewSet):
         cached_data = cache.get(cache_key)
         logger.info(cached_data)
         if cached_data is None:
-            popular = Restaurant.objects.filter(is_open=True).order_by('-average_rating')
+            popular = Restaurant.objects.filter(is_open=True,is_deleted=False).order_by('-average_rating')
             serializer = RestaurantSerializer(popular, many=True, context={'request': request})
             cached_data = serializer.data
             cache.set(cache_key, cached_data, 1800)
         return Response(cached_data,status=status.HTTP_200_OK)
     
-    
+
 
 @extend_schema_view(
     create=extend_schema(
@@ -695,6 +705,13 @@ class OrderViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
     http_method_names = ['get', 'post']
 
+    def retrieve(self, request, *args, **kwargs):
+        """ Only order customer, restaurant and drivers can access own orders. """
+        instance = self.get_object()
+        self.check_object_permissions(request, instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
     def get_serializer_class(self):
         """ Different serializers for different method as per required fields. """
         if self.action in ['retrieve']:
@@ -711,8 +728,8 @@ class OrderViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsCustomer()]
         if self.action in ['assign-driver', 'cancel']:
             return [IsAuthenticated(), IsRestaurantOwner(), IsOwnerOrReadOnly()]
-        if self.action in ['update-status']:
-            return [IsRestaurantOwnerOrDriver]
+        if self.action in ['update_status']:
+            return [IsAuthenticated(), IsRestaurantOwnerOrDriver()]
         return [IsAuthenticated()]
 
     def get_queryset(self):
@@ -818,6 +835,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         user_type = request.user.user_type
         order = self.get_object()
+        self.check_object_permissions(request, order)
         new_status = request.data.get('status')
 
         if user_type == 'restaurant_owner':
@@ -905,6 +923,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         Custom method to assign the driver to order.
         """
         order = self.get_object()
+        self.check_object_permissions(request, order)
         if order.driver:
             return Response({'error': f'Driver is assigned. You cannot assign driver again'},status=status.HTTP_400_BAD_REQUEST)
     
@@ -970,7 +989,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 )
 class OrderItemViewSet(viewsets.ModelViewSet):
     """ Order items ViewSet to see the order items of customers. """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated,IsOrderCustomer]
     serializer_class = OrderItemSerializer
     http_method_names = ['get']
 
@@ -991,10 +1010,15 @@ class OrderItemViewSet(viewsets.ModelViewSet):
             return OrderItem.objects.filter(order__driver__user=user)
         return OrderItem.objects.none()
 
+    def retrieve(self, request, *args, **kwargs):
+        """ Override retrieve to enforce object-level permission on order items. """
+        instance = self.get_object()
+        if instance.order.customer.user != request.user and not (request.user.user_type == 'restaurant_owner' and instance.order.restaurant.owner == request.user) and not (request.user.user_type == 'delivery_driver' and instance.order.driver and instance.order.driver.user == request.user):
+            return Response({'detail': 'You do not have permission to view this order item.'}, status=status.HTTP_403_FORBIDDEN)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
     def create(self, request, *args, **kwargs):
-        """
-        User cannot add items only via cart users can create.
-        """
         return Response({'error':'Please order via Cart'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
     
     
@@ -1038,7 +1062,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
     """ Reveiw ViewSet to manage to reviews. """
     permission_classes = [IsAuthenticated, IsOrderCustomer]
     pagination_class = ReviewLimitOffsetPagination
-    queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     filter_backends = [DjangoFilterBackend,filters.SearchFilter,filters.OrderingFilter]
     filterset_class = ReviewFilter
@@ -1046,6 +1069,13 @@ class ReviewViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
     throttle_classes = [ReviewCreateThrottle]
     http_method_names = ['get', 'post']
+
+    def get_queryset(self):
+        """ Customers can only see their own reviews. """
+        user = self.request.user
+        if not user.is_authenticated:
+            return Review.objects.none()
+        return Review.objects.filter(customer__user=user)
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)
@@ -1056,10 +1086,3 @@ class ReviewViewSet(viewsets.ModelViewSet):
         """ Customer can only review their own orders only. """
         customer_profile = self.request.user.customer_profile
         serializer.save(customer=customer_profile)
-
-    def partial_update(self, request, *args, **kwargs):
-        """
-        User cannot update reviews.
-        """
-        return Response({'error':'You cannot update order items'},status=status.HTTP_405_METHOD_NOT_ALLOWED)
-    
