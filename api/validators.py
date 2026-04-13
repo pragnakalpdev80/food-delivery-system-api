@@ -33,6 +33,22 @@ def validate_amount(value):
     """
     This function will validate positive number.
     """
-    if value < 0:
+    if value <= 0:
         raise serializers.ValidationError("Amount cannot be negetive")
     return value 
+
+def validate_preparation_time(value):
+    """
+    This function validates the prepearation time
+    """
+    if value <= 0:
+        raise serializers.ValidationError("Preparation time can not be 0 or negetive")
+    return value
+
+def validate_quantity(value):
+    """
+    This function validates the prepearation time
+    """
+    if value <= 0:
+        raise serializers.ValidationError("quantity can not be 0 or negetive")
+    return value

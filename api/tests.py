@@ -13,9 +13,6 @@ from rest_framework_simplejwt.tokens import AccessToken
 def api_client():
     return APIClient()
 
-@pytest.fixture
-def restaurant_owner_user(create_user):
-    return create_user("owner1", "restaurant_owner", "9000000002")
 
 @pytest.fixture
 def restaurant_owner_user(db):

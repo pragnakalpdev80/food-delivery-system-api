@@ -11,7 +11,9 @@ from api.validators import (
     validate_amount,
     validate_image_format,
     validate_image_size_5mb,
-    validate_image_size_10mb
+    validate_image_size_10mb,
+    validate_preparation_time,
+    validate_quantity
 )
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -144,6 +146,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
     """ Menu items serializer with required fields """
     image = serializers.ImageField(validators=[validate_image_format, validate_image_size_5mb], required=False) 
     price = serializers.DecimalField(max_digits=10, decimal_places=2, validators=[validate_amount])
+    preparation_time = serializers.IntegerField(validators=[validate_preparation_time])
 
     class Meta:
         model = MenuItem
@@ -192,6 +195,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     menu_item_name = serializers.CharField(source='menu_item.name', read_only=True)
     menu_item_price = serializers.DecimalField(source='menu_item.price', max_digits=8, decimal_places=2, read_only=True)
     subtotal = serializers.SerializerMethodField()
+    quantity = serializers.IntegerField(validators=[validate_quantity])
 
     class Meta:
         model = CartItem

@@ -96,18 +96,15 @@ def custom_exception_handler(exc, context):
                 'message': get_error_message(response.status_code),
                 'details': response.data if settings.DEBUG else {'code': 'error'}}
         
-        # Add exception type for debugging
-        error_data['error']['type'] = exc.__class__.__name__
         
         # Log error
+        user_id = request.user.id if request.user.is_authenticated else 'anonymous'
         logger.error(
-            f"Error {error_data['error']['status_code']}: {exc}",
-            extra={
-                'ip_address': request.META.get('REMOTE_ADDR'),
-                'user_agent': request.META.get('HTTP_USER_AGENT'),
-                'request_path': request.path if request else None,
-                'request_method': request.method if request else None,
-            },
+            f"Error {error_data['error']['status_code']}: {exc} | "
+            f"user={user_id} | "
+            f"ip={request.META.get('REMOTE_ADDR', 'unknown') if request else 'unknown'} | "
+            f"path={request.path if request else 'unknown'} | "
+            f"method={request.method if request else 'unknown'}",
             exc_info=settings.DEBUG
         )
         
